@@ -1,0 +1,26 @@
+# .NET build output
+[Bb]in/
+[Oo]bj/
+
+# Node / Next.js output
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+frontend/.env.local
+frontend/next-env.d.ts
+backend/appsettings.Local.json
+src/**/appsettings.Local.json
+
+# IDE and operating-system files
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

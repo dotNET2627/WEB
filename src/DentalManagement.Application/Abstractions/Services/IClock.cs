@@ -1,0 +1,6 @@
+namespace DentalManagement.Application.Abstractions.Services;
+
+public interface IClock
+{
+    DateTimeOffset UtcNow { get; }
+}
