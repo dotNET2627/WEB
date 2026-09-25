@@ -19,4 +19,5 @@ public static class CollectionNames
     public const string DiscountPrograms = "discountPrograms";
     public const string InsuranceClaims = "insuranceClaims";
     public const string AuditLogs = "auditLogs";
+    public const string RefreshTokens = "refresh_tokens";
 }

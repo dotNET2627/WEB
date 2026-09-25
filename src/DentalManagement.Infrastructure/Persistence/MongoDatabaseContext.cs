@@ -30,7 +30,9 @@ public sealed class MongoDatabaseContext
     public IMongoCollection<AppointmentDocument> Appointments => Database.GetCollection<AppointmentDocument>(CollectionNames.Appointments);
     public IMongoCollection<InvoiceDocument> Invoices => Database.GetCollection<InvoiceDocument>(CollectionNames.Invoices);
     public IMongoCollection<InventoryBatchDocument> InventoryBatches => Database.GetCollection<InventoryBatchDocument>(CollectionNames.InventoryBatches);
-    public IMongoCollection<BsonDocument> Users => Database.GetCollection<BsonDocument>(CollectionNames.Users);
+    public IMongoCollection<UserDocument> Users => Database.GetCollection<UserDocument>(CollectionNames.Users);
+    public IMongoCollection<RoleDocument> Roles => Database.GetCollection<RoleDocument>(CollectionNames.Roles);
+    public IMongoCollection<RefreshTokenDocument> RefreshTokens => Database.GetCollection<RefreshTokenDocument>(CollectionNames.RefreshTokens);
     public IMongoCollection<BsonDocument> AuditLogs => Database.GetCollection<BsonDocument>(CollectionNames.AuditLogs);
 
     public IMongoCollection<TDocument> GetCollection<TDocument>(string collectionName) =>

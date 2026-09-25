@@ -1,3 +1,5 @@
+using DentalManagement.Api.Endpoints;
+
 namespace DentalManagement.Api.Extensions;
 
 public static class EndpointRouteBuilderExtensions
@@ -18,6 +20,17 @@ public static class EndpointRouteBuilderExtensions
             name = "Dental Management API",
             version = "v1"
         }));
+
+        endpoints.MapAuthEndpoints();
+
+        // Demonstration of Dynamic Permission Policy
+        api.MapGet("/patients-demo", () => Results.Ok(new[]
+        {
+            new { id = Guid.NewGuid(), fullName = "Nguyễn Văn A", patientCode = "BN001" },
+            new { id = Guid.NewGuid(), fullName = "Trần Thị B", patientCode = "BN002" }
+        }))
+        .RequireAuthorization("patients.read")
+        .WithTags("Patients");
 
         return endpoints;
     }

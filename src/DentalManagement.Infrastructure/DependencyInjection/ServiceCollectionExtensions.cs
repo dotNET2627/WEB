@@ -21,10 +21,22 @@ public static class ServiceCollectionExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString), "MongoDb:ConnectionString is required.")
             .ValidateOnStart();
 
+        services.AddOptions<DentalManagement.Infrastructure.Security.JwtOptions>()
+            .BindConfiguration(DentalManagement.Infrastructure.Security.JwtOptions.SectionName);
+
         services.AddSingleton<MongoDatabaseContext>();
         services.AddSingleton<MongoSessionAccessor>();
         services.AddSingleton<MongoIndexInitializer>();
         services.AddHostedService<MongoIndexInitializerHostedService>();
+
+        services.AddSingleton<IClock, DentalManagement.Infrastructure.Services.SystemClock>();
+        services.AddSingleton<IPasswordHasher, DentalManagement.Infrastructure.Security.BcryptPasswordHasher>();
+        services.AddSingleton<ITokenService, DentalManagement.Infrastructure.Security.JsonWebTokenService>();
+
+        services.AddScoped<IUserRepository, MongoUserRepository>();
+        services.AddScoped<IRoleRepository, MongoRoleRepository>();
+        services.AddScoped<IRefreshTokenRepository, MongoRefreshTokenRepository>();
+
         services.AddScoped<IPatientRepository, MongoPatientRepository>();
         services.AddScoped<IAppointmentRepository, MongoAppointmentRepository>();
         services.AddScoped<ITransactionRunner, MongoTransactionRunner>();

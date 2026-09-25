@@ -18,9 +18,10 @@ public static class ApplicationBuilderExtensions
 
         app.UseCors("Frontend");
 
-        // Enable after configuring authentication/authorization packages.
-        // app.UseAuthentication();
-        // app.UseAuthorization();
+        app.UseRateLimiter();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         return app;
     }

@@ -7,7 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DentalManagement.Domain\DentalManagement.Domain.csproj" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
   </ItemGroup>
-
-  <!-- Add the project reference to DentalManagement.Domain yourself. -->
 </Project>

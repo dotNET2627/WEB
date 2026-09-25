@@ -1,4 +1,5 @@
 using DentalManagement.Infrastructure.Persistence.Documents;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace DentalManagement.Infrastructure.Persistence.Indexes;
@@ -20,7 +21,7 @@ public sealed class MongoIndexInitializer
                 new CreateIndexOptions<PatientDocument>
                 {
                     Unique = true,
-                    PartialFilterExpression = Builders<PatientDocument>.Filter.Ne(document => document.PatientCode, null),
+                    PartialFilterExpression = Builders<PatientDocument>.Filter.Type(document => document.PatientCode, BsonType.String),
                     Name = "uq_patients_clinic_patient_code"
                 }),
             cancellationToken: cancellationToken);
@@ -35,6 +36,36 @@ public sealed class MongoIndexInitializer
             new CreateIndexModel<InventoryBatchDocument>(
                 Builders<InventoryBatchDocument>.IndexKeys.Ascending(document => document.ClinicId).Ascending(document => document.InventoryItemId).Ascending(document => document.ExpirationDate),
                 new CreateIndexOptions { Name = "ix_inventory_batches_fefo" }),
+            cancellationToken: cancellationToken);
+
+        await _context.Users.Indexes.CreateOneAsync(
+            new CreateIndexModel<UserDocument>(
+                Builders<UserDocument>.IndexKeys.Ascending(document => document.Email),
+                new CreateIndexOptions { Unique = true, Name = "uq_users_email" }),
+            cancellationToken: cancellationToken);
+
+        await _context.Roles.Indexes.CreateOneAsync(
+            new CreateIndexModel<RoleDocument>(
+                Builders<RoleDocument>.IndexKeys.Ascending(document => document.Name),
+                new CreateIndexOptions { Unique = true, Name = "uq_roles_name" }),
+            cancellationToken: cancellationToken);
+
+        await _context.RefreshTokens.Indexes.CreateOneAsync(
+            new CreateIndexModel<RefreshTokenDocument>(
+                Builders<RefreshTokenDocument>.IndexKeys.Ascending(document => document.TokenHash),
+                new CreateIndexOptions { Unique = true, Name = "uq_refresh_tokens_token_hash" }),
+            cancellationToken: cancellationToken);
+
+        await _context.RefreshTokens.Indexes.CreateOneAsync(
+            new CreateIndexModel<RefreshTokenDocument>(
+                Builders<RefreshTokenDocument>.IndexKeys.Ascending(document => document.UserId),
+                new CreateIndexOptions { Name = "ix_refresh_tokens_user_id" }),
+            cancellationToken: cancellationToken);
+
+        await _context.RefreshTokens.Indexes.CreateOneAsync(
+            new CreateIndexModel<RefreshTokenDocument>(
+                Builders<RefreshTokenDocument>.IndexKeys.Ascending(document => document.ExpiresAt),
+                new CreateIndexOptions { ExpireAfter = TimeSpan.Zero, Name = "ttl_refresh_tokens_expires_at" }),
             cancellationToken: cancellationToken);
     }
 }

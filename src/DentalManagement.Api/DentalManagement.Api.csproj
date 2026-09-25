@@ -8,6 +8,12 @@
     <ProjectReference Include="..\DentalManagement.Application\DentalManagement.Application.csproj" />
     <ProjectReference Include="..\DentalManagement.Infrastructure\DentalManagement.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="dotenv.net" Version="4.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+  </ItemGroup>
 
   <!-- Add references to Application/Infrastructure and optional API packages yourself. -->
 </Project>
