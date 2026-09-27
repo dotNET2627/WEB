@@ -11,15 +11,26 @@ public enum AppointmentStatus
     NoShow
 }
 
+/// <summary>Snapshot of a service planned at the time of booking (denormalized for audit-safety).</summary>
+public sealed record PlannedService(
+    Guid ServiceId,
+    string ServiceName,
+    decimal UnitPrice,
+    string? ToothNumber);
+
 public sealed class Appointment : AuditableEntity
 {
+    private readonly List<PlannedService> _plannedServices = [];
+
     public Appointment(
         Guid id,
         Guid patientId,
         Guid doctorId,
         Guid clinicId,
         DateTimeOffset startsAt,
-        DateTimeOffset? endsAt = null)
+        DateTimeOffset? endsAt = null,
+        string? reason = null,
+        IEnumerable<PlannedService>? plannedServices = null)
         : base(id)
     {
         if (endsAt is not null && endsAt <= startsAt)
@@ -32,6 +43,12 @@ public sealed class Appointment : AuditableEntity
         ClinicId = clinicId;
         StartsAt = startsAt;
         EndsAt = endsAt;
+        Reason = reason;
+
+        if (plannedServices is not null)
+        {
+            _plannedServices.AddRange(plannedServices);
+        }
     }
 
     public Guid PatientId { get; private set; }
@@ -41,6 +58,9 @@ public sealed class Appointment : AuditableEntity
     public DateTimeOffset? EndsAt { get; private set; }
     public AppointmentStatus Status { get; private set; } = AppointmentStatus.Pending;
     public string? Reason { get; private set; }
+
+    /// <summary>Immutable snapshot of planned services captured at booking time.</summary>
+    public IReadOnlyList<PlannedService> PlannedServices => _plannedServices.AsReadOnly();
 
     public Result Confirm()
     {
@@ -62,6 +82,25 @@ public sealed class Appointment : AuditableEntity
         }
 
         Status = AppointmentStatus.Cancelled;
+        Touch();
+        return Result.Success();
+    }
+
+    /// <summary>Update reschedule times (only allowed when Pending or Confirmed).</summary>
+    public Result Reschedule(DateTimeOffset startsAt, DateTimeOffset? endsAt)
+    {
+        if (Status is AppointmentStatus.Completed or AppointmentStatus.Cancelled)
+        {
+            return Result.Failure("appointment.invalid_state", "Cannot reschedule a completed or cancelled appointment.");
+        }
+
+        if (endsAt is not null && endsAt <= startsAt)
+        {
+            return Result.Failure("appointment.invalid_time", "End time must be after start time.");
+        }
+
+        StartsAt = startsAt;
+        EndsAt = endsAt;
         Touch();
         return Result.Success();
     }

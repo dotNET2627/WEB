@@ -1,5 +1,6 @@
 using DentalManagement.Application.Abstractions.Persistence;
 using DentalManagement.Application.Abstractions.Services;
+using DentalManagement.Infrastructure.Caching;
 using DentalManagement.Infrastructure.Persistence;
 using DentalManagement.Infrastructure.Persistence.Indexes;
 using DentalManagement.Infrastructure.Persistence.Repositories;
@@ -28,6 +29,20 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<MongoSessionAccessor>();
         services.AddSingleton<MongoIndexInitializer>();
         services.AddHostedService<MongoIndexInitializerHostedService>();
+
+        // Redis – IDistributedCache (used for output cache and token blacklist)
+        services.AddOptions<RedisOptions>()
+            .BindConfiguration(RedisOptions.SectionName)
+            .ValidateOnStart();
+
+        services.AddStackExchangeRedisCache(opt =>
+        {
+            var redisOpts = configuration
+                .GetSection(RedisOptions.SectionName)
+                .Get<RedisOptions>() ?? new RedisOptions();
+            opt.Configuration = redisOpts.ConnectionString;
+            opt.InstanceName = redisOpts.InstanceName;
+        });
 
         services.AddSingleton<IClock, DentalManagement.Infrastructure.Services.SystemClock>();
         services.AddSingleton<IPasswordHasher, DentalManagement.Infrastructure.Security.BcryptPasswordHasher>();

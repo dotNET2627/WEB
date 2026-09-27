@@ -1,0 +1,17 @@
+# Override for local development — exposes extra ports for direct access
+services:
+  mongo:
+    ports:
+      - "27017:27017"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      target: build          # stop at SDK stage — faster rebuild with hot-reload
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - ./src:/repo/src      # mount source for potential file-watching
