@@ -1,0 +1,9 @@
+@"
+**/bin/
+**/obj/
+**/.vs/
+**/node_modules/
+.git
+.env
+frontend
+"@ | Set-Content -Encoding ascii .dockerignore
