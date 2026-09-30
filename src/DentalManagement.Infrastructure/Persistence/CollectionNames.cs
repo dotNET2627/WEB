@@ -20,4 +20,5 @@ public static class CollectionNames
     public const string InsuranceClaims = "insuranceClaims";
     public const string AuditLogs = "auditLogs";
     public const string RefreshTokens = "refresh_tokens";
+    public const string ServiceCategories = "serviceCategories";
 }

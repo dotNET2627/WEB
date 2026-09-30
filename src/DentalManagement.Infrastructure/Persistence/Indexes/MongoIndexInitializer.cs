@@ -67,5 +67,23 @@ public sealed class MongoIndexInitializer
                 Builders<RefreshTokenDocument>.IndexKeys.Ascending(document => document.ExpiresAt),
                 new CreateIndexOptions { ExpireAfter = TimeSpan.Zero, Name = "ttl_refresh_tokens_expires_at" }),
             cancellationToken: cancellationToken);
+
+        await _context.Services.Indexes.CreateOneAsync(
+            new CreateIndexModel<ServiceDocument>(
+                Builders<ServiceDocument>.IndexKeys.Ascending(document => document.Code),
+                new CreateIndexOptions { Unique = true, Name = "uq_services_code" }),
+            cancellationToken: cancellationToken);
+
+        await _context.Services.Indexes.CreateOneAsync(
+            new CreateIndexModel<ServiceDocument>(
+                Builders<ServiceDocument>.IndexKeys.Ascending(document => document.CategoryId).Ascending(document => document.IsActive),
+                new CreateIndexOptions { Name = "ix_services_category_active" }),
+            cancellationToken: cancellationToken);
+
+        await _context.ServiceCategories.Indexes.CreateOneAsync(
+            new CreateIndexModel<ServiceCategoryDocument>(
+                Builders<ServiceCategoryDocument>.IndexKeys.Ascending(document => document.Name),
+                new CreateIndexOptions { Unique = true, Name = "uq_service_categories_name" }),
+            cancellationToken: cancellationToken);
     }
 }
