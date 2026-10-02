@@ -13,3 +13,8 @@ export interface PagedResponse<T> {
   pageSize: number;
   totalCount: number;
 }
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+}
