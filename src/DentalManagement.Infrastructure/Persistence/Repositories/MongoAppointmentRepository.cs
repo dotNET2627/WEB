@@ -26,6 +26,31 @@ public sealed class MongoAppointmentRepository : IAppointmentRepository
         return document is null ? null : AppointmentDocumentMapper.ToDomain(document);
     }
 
+    public async Task<IReadOnlyList<Appointment>> GetByDateRangeAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        Guid? doctorId,
+        CancellationToken cancellationToken)
+    {
+        var builder = Builders<AppointmentDocument>.Filter;
+
+        // Appointment overlaps [from, to] if: StartsAt < to AND (EndsAt is null OR EndsAt > from)
+        var filter = builder.And(
+            builder.Lt(d => d.StartsAt, to),
+            builder.Or(
+                builder.Eq(d => d.EndsAt, null),
+                builder.Gt(d => d.EndsAt, from)));
+
+        if (doctorId is not null)
+            filter &= builder.Eq(d => d.DoctorId, doctorId.Value);
+
+        var documents = _sessionAccessor.Current is { } session
+            ? await _context.Appointments.Find(session, filter).ToListAsync(cancellationToken)
+            : await _context.Appointments.Find(filter).ToListAsync(cancellationToken);
+
+        return documents.Select(AppointmentDocumentMapper.ToDomain).ToList();
+    }
+
     public async Task<bool> HasDoctorConflictAsync(
         Guid doctorId,
         DateTimeOffset startsAt,

@@ -5,6 +5,11 @@ namespace DentalManagement.Application.Abstractions.Persistence;
 public interface IAppointmentRepository
 {
     Task<Appointment?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Appointment>> GetByDateRangeAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        Guid? doctorId,
+        CancellationToken cancellationToken);
     Task<bool> HasDoctorConflictAsync(
         Guid doctorId,
         DateTimeOffset startsAt,
