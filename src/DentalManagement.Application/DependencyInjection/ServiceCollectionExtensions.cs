@@ -4,7 +4,7 @@ using DentalManagement.Application.Identity.Commands.RefreshToken;
 using DentalManagement.Application.Identity.Commands.RevokeToken;
 using DentalManagement.Application.Identity.Commands.SwitchClinic;
 using DentalManagement.Application.Identity.Queries.GetCurrentUser;
-using DentalManagement.Application.Patients.CreatePatient;
+using DentalManagement.Application.Patients;
 using DentalManagement.Domain.Common;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<GetCurrentUserQuery, Result<CurrentUserDto>>, GetCurrentUserQueryHandler>();
 
         // Feature Handlers
-        services.AddScoped<ICommandHandler<CreatePatientCommand, Result<Guid>>, CreatePatientHandler>();
+        services.AddScoped<PatientService>();
 
         return services;
     }
