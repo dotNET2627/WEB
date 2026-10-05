@@ -6,7 +6,7 @@ public static class CollectionNames
     public const string Roles = "roles";
     public const string Clinics = "clinics";
     public const string Doctors = "doctors";
-    public const string Patients = "patients";
+    public const string Patients = "benhnhan";
     public const string Appointments = "appointments";
     public const string TreatmentPlans = "treatmentPlans";
     public const string Services = "services";
