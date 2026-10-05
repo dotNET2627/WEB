@@ -40,6 +40,22 @@ public static class DefaultPermissions
         public const string Adjust = "inventory.adjust";
     }
 
+    public static class Clinics
+    {
+        public const string Read = "clinics.read";
+        public const string Create = "clinics.create";
+        public const string Update = "clinics.update";
+        public const string Delete = "clinics.delete";
+    }
+
+    public static class Doctors
+    {
+        public const string Read = "doctors.read";
+        public const string Create = "doctors.create";
+        public const string Update = "doctors.update";
+        public const string Delete = "doctors.delete";
+    }
+
     public static class System
     {
         public const string ViewReports = "reports.view";
@@ -48,6 +64,8 @@ public static class DefaultPermissions
 
     public static readonly IReadOnlyList<string> All =
     [
+        Clinics.Read, Clinics.Create, Clinics.Update, Clinics.Delete,
+        Doctors.Read, Doctors.Create, Doctors.Update, Doctors.Delete,
         Patients.Read, Patients.Create, Patients.Update, Patients.Delete,
         Appointments.Read, Appointments.Create, Appointments.Update, Appointments.Cancel,
         Invoices.Read, Invoices.Create, Invoices.Pay,

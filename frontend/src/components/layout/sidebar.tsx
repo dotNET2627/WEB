@@ -7,6 +7,8 @@ const items = [
   { href: "/dashboard", label: "Tổng quan" },
   { href: "/patients", label: "Bệnh nhân" },
   { href: "/appointments", label: "Lịch hẹn" },
+  { href: "/doctors", label: "Bác sĩ" },
+  { href: "/clinics", label: "Chi nhánh" },
   { href: "/treatment-plans", label: "Phác đồ điều trị" },
   { href: "/prescriptions", label: "Đơn thuốc" },
   { href: "/inventory", label: "Kho vật tư" },

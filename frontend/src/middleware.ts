@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const CLINIC_PUBLIC_PATHS = ["/login", "/forgot-password"];
-const PATIENT_PUBLIC_PATHS = ["/portal/login", "/portal/booking"];
+const PATIENT_PUBLIC_PATHS = ["/portal", "/portal/login", "/portal/booking"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -45,12 +45,9 @@ export function middleware(request: NextRequest) {
       (path) => pathname === path || pathname.startsWith(`${path}/`)
     );
 
-    // Truy cập root /portal
+    // Truy cập root /portal (Landing Page công khai giới thiệu Cổng Bệnh nhân)
     if (pathname === "/portal") {
-      if (hasSession && authRole === "patient") {
-        return NextResponse.redirect(new URL("/portal/dashboard", request.url));
-      }
-      return NextResponse.redirect(new URL("/portal/login", request.url));
+      return NextResponse.next();
     }
 
     // Chưa có session mà vào trang bệnh nhân bảo vệ

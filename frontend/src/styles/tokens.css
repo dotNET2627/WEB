@@ -1,0 +1,49 @@
+:root {
+  /* Màu từ Design Tokens GEMINI.md mục 5.2 */
+  --color-bg: #F6F7F8;
+  --color-surface: #FFFFFF;
+  --color-text: #1B2430;
+  --color-text-muted: #4B5563;      /* tương phản >= 4.5:1 trên nền trắng */
+  --color-primary: #0E6B6B;         /* màu chính từ logo phòng khám */
+  --color-primary-hover: #0A5353;
+  --color-primary-contrast: #FFFFFF; /* tương phản 6.3:1 trên #0E6B6B */
+  --color-border: #D9DEE3;
+  --color-border-input: #6B7280;    /* tương phản >= 3:1 trên nền #F6F7F8 và #FFFFFF */
+  --color-danger: #B42318;
+  --color-focus: #1D4ED8;
+
+  --radius: 8px;                    /* MỘT giá trị duy nhất */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+  --space-6: 64px;
+
+  --font-body: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --text-xs: 0.8125rem;  /* 13px: cỡ nhỏ nhất, chỉ cho metadata như thời gian sửa */
+  --text-table: 0.875rem; /* 14px: bảng, menu */
+  --text-sm: 0.875rem;   /* 14px, cỡ nhỏ nhất được phép */
+  --text-base: 1rem;     /* 16px, chữ nội dung */
+  --text-lg: 1.125rem;   /* 18px, ô nhập */
+  --text-h1: 1.75rem;    /* 28px, tiêu đề */
+
+  /* ADMIN_UI_RULES.md mục 1: Trạng thái từng cặp nền + chữ */
+  --status-neutral-bg: #EBEEF0;
+  --status-neutral-fg: #3D4A4D;
+  --status-info-bg: #E6EEF8;
+  --status-info-fg: #1D4E89;
+  --status-success-bg: #E3F1E8;
+  --status-success-fg: #1B6B3A;
+  --status-warning-bg: #FBF0D9;
+  --status-warning-fg: #7A4B00;
+  --status-danger-bg: #FBE4E1;
+  --status-danger-fg: #9C1C12;
+
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 64px;
+  --topbar-h: 56px;
+  --row-h: 48px;
+  --row-h-compact: 36px;
+  --shadow-overlay: 0 8px 24px rgb(20 33 43 / 0.16);
+}
