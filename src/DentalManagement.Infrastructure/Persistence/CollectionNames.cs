@@ -4,8 +4,8 @@ public static class CollectionNames
 {
     public const string Users = "users";
     public const string Roles = "roles";
-    public const string Clinics = "clinics";
-    public const string Doctors = "doctors";
+    public const string Clinics = "phongkham";
+    public const string Doctors = "bacsi";
     public const string Patients = "patients";
     public const string Appointments = "appointments";
     public const string TreatmentPlans = "treatmentPlans";

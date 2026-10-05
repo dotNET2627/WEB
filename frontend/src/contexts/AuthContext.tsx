@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<User>;
   loginWithPhoneOtp: (phoneNumber: string, otp: string) => Promise<User>;
+  loginWithGoogle: () => Promise<User>;
   logout: (redirectPath?: string) => Promise<void>;
   switchClinic: (targetClinicId: string) => Promise<void>;
   hasPermission: (permission: string) => boolean;
@@ -101,9 +102,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setOnSessionExpired(() => {
       setUser(null);
       clearSessionCookies();
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("patient_profile");
-      }
       const isCurrentAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
       const isCurrentPortal = typeof window !== "undefined" && window.location.pathname.startsWith("/portal");
       const target = isCurrentAdmin
@@ -127,17 +125,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSessionCookies(profile);
           scheduleSilentRefresh(15 * 60);
         } else {
-          // Check for existing patient profile in dev / demo
-          if (typeof window !== "undefined") {
-            const savedPatient = localStorage.getItem("patient_profile");
-            const hasAuthSession = document.cookie.includes("auth_session=1");
-            const isPatientRole = document.cookie.includes("auth_role=patient");
-            if (savedPatient && hasAuthSession && isPatientRole) {
-              const parsed = JSON.parse(savedPatient) as User;
-              setUser(parsed);
-              setSessionCookies(parsed);
-              return;
-            }
+          // Kiểm tra session cookie của bệnh nhân
+          const hasAuthSession = typeof document !== "undefined" && document.cookie.includes("auth_session=1");
+          const isPatientRole = typeof document !== "undefined" && document.cookie.includes("auth_role=patient");
+          if (hasAuthSession && isPatientRole) {
+            const patientUser: User = {
+              id: "patient-session",
+              email: "patient@dentalcare.vn",
+              fullName: "Bệnh nhân",
+              activeClinicId: null,
+              roles: ["Patient"],
+              permissions: ["patient.read_records", "patient.book_appointment"],
+              assignedClinicIds: []
+            };
+            setUser(patientUser);
+            return;
           }
           clearSessionCookies();
         }
@@ -170,47 +172,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [scheduleSilentRefresh]);
 
   const loginWithPhoneOtp = useCallback(async (phoneNumber: string, otp: string): Promise<User> => {
-    try {
-      const response = await apiClient.post<{ accessToken: string; expiresIn: number; user: User }, { phoneNumber: string; otp: string }>(
-        "/api/v1/auth/patient/verify-otp",
-        { phoneNumber, otp }
-      );
-      setAccessToken(response.accessToken);
-      setUser(response.user);
-      setSessionCookies(response.user);
-      scheduleSilentRefresh(response.expiresIn);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("patient_profile", JSON.stringify(response.user));
-      }
-      return response.user;
-    } catch {
-      // Support development / demo Mock OTP verification
-      if (otp === "123456" || (otp.length === 6 && /^\d+$/.test(otp))) {
-        const cleanPhone = phoneNumber.trim().replace(/\D/g, "");
-        const mockPatientUser: User = {
-          id: "patient-" + cleanPhone,
-          email: `${cleanPhone}@patient.dentalcare.vn`,
-          fullName: "Bệnh nhân " + (cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone),
-          phoneNumber: cleanPhone,
-          patientCode: `BN-2026-${cleanPhone.slice(-4) || "8888"}`,
-          activeClinicId: null,
-          roles: ["Patient"],
-          permissions: ["patient.read_records", "patient.book_appointment"],
-          assignedClinicIds: []
-        };
+    const response = await fetch("/api/auth/patient/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phoneNumber, otp })
+    });
 
-        const mockAccessToken = "mock-patient-jwt-token-" + Date.now();
-        setAccessToken(mockAccessToken);
-        setUser(mockPatientUser);
-        setSessionCookies(mockPatientUser);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("patient_profile", JSON.stringify(mockPatientUser));
-        }
-        return mockPatientUser;
-      }
-      throw new Error("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại với mã 123456.");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "Mã OTP không chính xác hoặc đã hết hạn.");
     }
-  }, [scheduleSilentRefresh]);
+
+    const patientUser: User = data.user;
+    setUser(patientUser);
+    return patientUser;
+  }, []);
+
+  const loginWithGoogle = useCallback(async (): Promise<User> => {
+    const response = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "Không thể đăng nhập bằng Google. Vui lòng thử lại sau.");
+    }
+
+    const patientUser: User = data.user;
+    setUser(patientUser);
+    return patientUser;
+  }, []);
 
   const switchClinic = useCallback(async (targetClinicId: string) => {
     const response = await apiClient.post<SwitchClinicResponse, { targetClinicId: string }>(
@@ -244,6 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         loginWithPhoneOtp,
+        loginWithGoogle,
         logout,
         switchClinic,
         hasPermission

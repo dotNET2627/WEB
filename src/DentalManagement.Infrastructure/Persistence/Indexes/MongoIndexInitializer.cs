@@ -67,5 +67,37 @@ public sealed class MongoIndexInitializer
                 Builders<RefreshTokenDocument>.IndexKeys.Ascending(document => document.ExpiresAt),
                 new CreateIndexOptions { ExpireAfter = TimeSpan.Zero, Name = "ttl_refresh_tokens_expires_at" }),
             cancellationToken: cancellationToken);
+
+        // Clinics (phongkham)
+        await _context.Clinics.Indexes.CreateOneAsync(
+            new CreateIndexModel<ClinicDocument>(
+                Builders<ClinicDocument>.IndexKeys.Ascending(document => document.Name),
+                new CreateIndexOptions { Name = "ix_phongkham_tenphongkham" }),
+            cancellationToken: cancellationToken);
+
+        // Doctors (bacsi)
+        await _context.Doctors.Indexes.CreateOneAsync(
+            new CreateIndexModel<DoctorDocument>(
+                Builders<DoctorDocument>.IndexKeys.Ascending(document => document.UserId),
+                new CreateIndexOptions { Unique = true, Name = "uq_bacsi_nguoidungid" }),
+            cancellationToken: cancellationToken);
+
+        await _context.Doctors.Indexes.CreateOneAsync(
+            new CreateIndexModel<DoctorDocument>(
+                Builders<DoctorDocument>.IndexKeys.Ascending(document => document.MedicalLicenseNumber),
+                new CreateIndexOptions { Unique = true, Name = "uq_bacsi_sochungchihanhnghe" }),
+            cancellationToken: cancellationToken);
+
+        await _context.Doctors.Indexes.CreateOneAsync(
+            new CreateIndexModel<DoctorDocument>(
+                Builders<DoctorDocument>.IndexKeys.Ascending(document => document.ClinicId),
+                new CreateIndexOptions { Name = "ix_bacsi_phongkhamid" }),
+            cancellationToken: cancellationToken);
+
+        await _context.Doctors.Indexes.CreateOneAsync(
+            new CreateIndexModel<DoctorDocument>(
+                Builders<DoctorDocument>.IndexKeys.Ascending("calamviec.thutrongtuan"),
+                new CreateIndexOptions { Name = "ix_bacsi_calamviec_thutrongtuan" }),
+            cancellationToken: cancellationToken);
     }
 }

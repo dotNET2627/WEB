@@ -24,3 +24,7 @@ src/**/appsettings.Local.json
 *.suo
 .DS_Store
 Thumbs.db
+.agent
+.agents
+test-results/
+playwright-report/

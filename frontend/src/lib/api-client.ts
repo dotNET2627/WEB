@@ -124,7 +124,15 @@ export class ApiClient {
 
     if (!response.ok) {
       const error = (await response.json().catch(() => null)) as ApiError | null;
-      throw new ApiClientError(response.status, error?.detail ?? "API request failed.", error);
+      const fallbackMessage =
+        response.status === 403
+          ? "Bạn không có quyền truy cập dữ liệu này (403 Forbidden)."
+          : response.status === 401
+          ? "Phiên làm việc đã hết hạn hoặc chưa đăng nhập (401 Unauthorized)."
+          : response.status === 404
+          ? "Không tìm thấy dữ liệu yêu cầu (404 Not Found)."
+          : "API request failed.";
+      throw new ApiClientError(response.status, error?.detail ?? error?.title ?? fallbackMessage, error);
     }
 
     if (response.status === 204) {

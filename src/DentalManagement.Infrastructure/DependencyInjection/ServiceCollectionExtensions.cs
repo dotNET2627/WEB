@@ -38,6 +38,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRefreshTokenRepository, MongoRefreshTokenRepository>();
 
         services.AddScoped<IPatientRepository, MongoPatientRepository>();
+        services.AddScoped<IClinicRepository, MongoClinicRepository>();
+        services.AddScoped<IDoctorRepository, MongoDoctorRepository>();
         services.AddScoped<IAppointmentRepository, MongoAppointmentRepository>();
         services.AddScoped<ITransactionRunner, MongoTransactionRunner>();
         services.AddScoped<IFileStorage, NotConfiguredFileStorage>();
