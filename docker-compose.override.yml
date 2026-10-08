@@ -2,7 +2,7 @@
 services:
   mongo:
     ports:
-      - "27017:27017"
+      - "27018:27017"
 
   redis:
     ports:
@@ -11,7 +11,9 @@ services:
   api:
     build:
       target: build          # stop at SDK stage — faster rebuild with hot-reload
+    command: dotnet watch run --project src/DentalManagement.Api/DentalManagement.Api.csproj --non-interactive --no-launch-profile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
     volumes:
       - ./src:/repo/src      # mount source for potential file-watching
