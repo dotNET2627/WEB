@@ -55,6 +55,8 @@ public sealed class DatabaseSeedHostedService : IHostedService
                     DefaultPermissions.Patients.Create,
                     DefaultPermissions.Appointments.Read,
                     DefaultPermissions.Appointments.Create,
+                    DefaultPermissions.Appointments.CheckIn,
+                    DefaultPermissions.Reception.Read,
                     DefaultPermissions.Invoices.Read,
                     DefaultPermissions.Invoices.Create,
                     DefaultPermissions.Invoices.Pay

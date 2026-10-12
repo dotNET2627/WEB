@@ -15,6 +15,7 @@ internal static class AppointmentDocumentMapper
         EndsAt = appointment.EndsAt,
         Status = appointment.Status.ToString(),
         Reason = appointment.Reason,
+        CheckedInAt = appointment.CheckedInAt,
         PlannedServices = appointment.PlannedServices
             .Select(s => new PlannedServiceDocument(s.ServiceId, s.ServiceName, s.UnitPrice, s.ToothNumber))
             .ToList(),
@@ -42,6 +43,7 @@ internal static class AppointmentDocumentMapper
             doc.Reason,
             doc.CreatedAt,
             doc.UpdatedAt,
-            services);
+            services,
+            doc.CheckedInAt);
     }
 }

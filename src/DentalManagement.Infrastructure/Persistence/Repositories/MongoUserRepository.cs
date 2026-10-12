@@ -25,6 +25,18 @@ public sealed class MongoUserRepository : IUserRepository
         return document is null ? null : UserDocumentMapper.ToDomain(document);
     }
 
+    public async Task<IReadOnlyList<User>> GetByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0) return [];
+
+        var filter = Builders<Documents.UserDocument>.Filter.In(d => d.Id, idList);
+        var documents = await _context.Users.Find(filter).ToListAsync(cancellationToken);
+        return documents.Select(UserDocumentMapper.ToDomain).ToList();
+    }
+
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();

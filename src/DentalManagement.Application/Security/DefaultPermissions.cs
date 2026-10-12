@@ -16,6 +16,12 @@ public static class DefaultPermissions
         public const string Create = "appointments.create";
         public const string Update = "appointments.update";
         public const string Cancel = "appointments.cancel";
+        public const string CheckIn = "appointments.checkin";
+    }
+
+    public static class Reception
+    {
+        public const string Read = "reception.read";
     }
 
     public static class Invoices
@@ -49,10 +55,12 @@ public static class DefaultPermissions
     public static readonly IReadOnlyList<string> All =
     [
         Patients.Read, Patients.Create, Patients.Update, Patients.Delete,
-        Appointments.Read, Appointments.Create, Appointments.Update, Appointments.Cancel,
+        Appointments.Read, Appointments.Create, Appointments.Update, Appointments.Cancel, Appointments.CheckIn,
+        Reception.Read,
         Invoices.Read, Invoices.Create, Invoices.Pay,
         Prescriptions.Read, Prescriptions.Create, Prescriptions.Dispense,
         Inventory.Read, Inventory.Import, Inventory.Export, Inventory.Adjust,
         System.ViewReports, System.ManageSettings
     ];
 }
+

@@ -1,6 +1,12 @@
+using DentalManagement.Application.Appointments.CancelAppointment;
+using DentalManagement.Application.Appointments.CheckInAppointment;
+using DentalManagement.Application.Appointments.CompleteAppointment;
+using DentalManagement.Application.Appointments.ConfirmAppointment;
 using DentalManagement.Application.Appointments.CreateAppointment;
 using DentalManagement.Application.Appointments.GetAppointment;
 using DentalManagement.Application.Appointments.ListAppointments;
+using DentalManagement.Application.Appointments.MarkNoShow;
+using DentalManagement.Application.Appointments.StartExam;
 using DentalManagement.Application.Appointments.UpdateAppointment;
 using DentalManagement.Application.Common;
 using DentalManagement.Application.Security;
@@ -142,8 +148,108 @@ public static class AppointmentEndpoints
         .WithName("RescheduleAppointment")
         .RequireAuthorization(DefaultPermissions.Appointments.Update);
 
+        // 5. Check-in (Confirmed → CheckedIn)
+        group.MapPatch("/{id:guid}/check-in", async (
+            Guid id,
+            ICommandHandler<CheckInAppointmentCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new CheckInAppointmentCommand(id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("CheckInAppointment")
+        .RequireAuthorization(DefaultPermissions.Appointments.CheckIn);
+
+        // 6. Start Exam (CheckedIn → InProgress)
+        group.MapPatch("/{id:guid}/start-exam", async (
+            Guid id,
+            ICommandHandler<StartExamCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new StartExamCommand(id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("StartExam")
+        .RequireAuthorization(DefaultPermissions.Appointments.CheckIn);
+
+        // 7. Complete (InProgress → Completed)
+        group.MapPatch("/{id:guid}/complete", async (
+            Guid id,
+            ICommandHandler<CompleteAppointmentCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new CompleteAppointmentCommand(id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("CompleteAppointment")
+        .RequireAuthorization(DefaultPermissions.Appointments.CheckIn);
+
+        // 8. No-Show (Confirmed/CheckedIn → NoShow)
+        group.MapPatch("/{id:guid}/no-show", async (
+            Guid id,
+            ICommandHandler<MarkNoShowCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new MarkNoShowCommand(id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("MarkNoShow")
+        .RequireAuthorization(DefaultPermissions.Appointments.CheckIn);
+
+        // 9. Confirm (Pending → Confirmed)
+        group.MapPatch("/{id:guid}/confirm", async (
+            Guid id,
+            ICommandHandler<ConfirmAppointmentCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new ConfirmAppointmentCommand(id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("ConfirmAppointment")
+        .RequireAuthorization(DefaultPermissions.Appointments.Update);
+
+        // 10. Cancel (Pending/Confirmed/CheckedIn → Cancelled)
+        group.MapPatch("/{id:guid}/cancel", async (
+            Guid id,
+            ICommandHandler<CancelAppointmentCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new CancelAppointmentCommand(id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("CancelAppointment")
+        .RequireAuthorization(DefaultPermissions.Appointments.Cancel);
+
         return endpoints;
     }
+
+    private static IResult MapStatusError(DentalManagement.Domain.Common.Error error) =>
+        error.Code switch
+        {
+            "appointment.not_found" => Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Không tìm thấy lịch hẹn",
+                detail: error.Message),
+            "appointment.invalid_state" => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "Trạng thái không hợp lệ",
+                detail: error.Message),
+            _ => Results.Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                detail: error.Message)
+        };
 }
 
 public sealed record CreateAppointmentRequest(

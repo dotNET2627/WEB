@@ -84,6 +84,14 @@ export class ApiClient {
     return this.request<TResponse>(path, { ...init, method: "DELETE" });
   }
 
+  async patch<TResponse = void, TBody = unknown>(path: string, body?: TBody, init?: RequestInit): Promise<TResponse> {
+    return this.request<TResponse>(path, {
+      ...init,
+      method: "PATCH",
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+  }
+
   private async request<T>(path: string, init: RequestInit, isRetry = false): Promise<T> {
     const headers = new Headers(init.headers);
     headers.set("Accept", "application/json");

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/dashboard", label: "Tổng quan" },
+  { href: "/reception", label: "Tiếp đón & Check-in" },
   { href: "/patients", label: "Bệnh nhân" },
   { href: "/appointments", label: "Lịch hẹn" },
   { href: "/treatment-plans", label: "Phác đồ điều trị" },

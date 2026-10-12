@@ -34,6 +34,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.GetAppointment.GetAppointmentQuery, Result<DentalManagement.Application.Appointments.GetAppointment.AppointmentDto>>, DentalManagement.Application.Appointments.GetAppointment.GetAppointmentHandler>();
         services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.ListAppointments.ListAppointmentsQuery, Result<IReadOnlyList<DentalManagement.Application.Appointments.ListAppointments.AppointmentSummaryDto>>>, DentalManagement.Application.Appointments.ListAppointments.ListAppointmentsHandler>();
 
+        // Check-in workflow handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentCommand, Result>, DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.StartExam.StartExamCommand, Result>, DentalManagement.Application.Appointments.StartExam.StartExamHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CompleteAppointment.CompleteAppointmentCommand, Result>, DentalManagement.Application.Appointments.CompleteAppointment.CompleteAppointmentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.MarkNoShow.MarkNoShowCommand, Result>, DentalManagement.Application.Appointments.MarkNoShow.MarkNoShowHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.GetTodayAppointments.GetTodayAppointmentsQuery, Result<IReadOnlyList<DentalManagement.Application.Appointments.GetTodayAppointments.TodayAppointmentDto>>>, DentalManagement.Application.Appointments.GetTodayAppointments.GetTodayAppointmentsHandler>();
+
         return services;
     }
 }

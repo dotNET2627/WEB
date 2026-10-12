@@ -10,6 +10,10 @@ public interface IAppointmentRepository
         DateTimeOffset to,
         Guid? doctorId,
         CancellationToken cancellationToken);
+    Task<IReadOnlyList<Appointment>> GetByClinicAndDateAsync(
+        Guid clinicId,
+        DateOnly date,
+        CancellationToken cancellationToken);
     Task<bool> HasDoctorConflictAsync(
         Guid doctorId,
         DateTimeOffset startsAt,
@@ -19,3 +23,4 @@ public interface IAppointmentRepository
     Task AddAsync(Appointment appointment, CancellationToken cancellationToken);
     Task ReplaceAsync(Appointment appointment, CancellationToken cancellationToken);
 }
+
