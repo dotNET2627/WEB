@@ -104,4 +104,25 @@ public sealed class Appointment : AuditableEntity
         Touch();
         return Result.Success();
     }
+
+    public static Appointment Rehydrate(
+        Guid id,
+        Guid patientId,
+        Guid doctorId,
+        Guid clinicId,
+        DateTimeOffset startsAt,
+        DateTimeOffset? endsAt,
+        AppointmentStatus status,
+        string? reason,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt,
+        IEnumerable<PlannedService>? plannedServices = null)
+    {
+        var appt = new Appointment(id, patientId, doctorId, clinicId, startsAt, endsAt, reason, plannedServices)
+        {
+            Status = status
+        };
+        appt.SetAuditDates(createdAt, updatedAt);
+        return appt;
+    }
 }

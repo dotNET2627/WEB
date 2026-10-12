@@ -1,5 +1,17 @@
+@import "react-big-calendar/lib/css/react-big-calendar.css";
+@import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 @import "tailwindcss";
-@import "../styles/tokens.css";
+
+
+:root {
+  --background: #f7f8fc;
+  --foreground: #172033;
+  --muted: #667085;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+}
 
 * {
   box-sizing: border-box;

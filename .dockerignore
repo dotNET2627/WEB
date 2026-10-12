@@ -1,11 +1,16 @@
-@"
+**/.git
+**/.github
+**/.vs
+**/.vscode
+**/.idea
 **/bin/
 **/obj/
-**/.vs/
+**/out/
 **/node_modules/
-.git
+**/.next/
+**/*.user
+**/*.suo
+**/TestResults/
 .env
-frontend
-"@ | Set-Content -Encoding ascii .dockerignore
-    ports:
-      - "127.0.0.1:27018:27017"
+.env.*
+!*.example

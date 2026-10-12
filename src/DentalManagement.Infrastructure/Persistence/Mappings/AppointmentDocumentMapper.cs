@@ -15,7 +15,33 @@ internal static class AppointmentDocumentMapper
         EndsAt = appointment.EndsAt,
         Status = appointment.Status.ToString(),
         Reason = appointment.Reason,
+        PlannedServices = appointment.PlannedServices
+            .Select(s => new PlannedServiceDocument(s.ServiceId, s.ServiceName, s.UnitPrice, s.ToothNumber))
+            .ToList(),
         CreatedAt = appointment.CreatedAt,
         UpdatedAt = appointment.UpdatedAt
     };
+
+    public static Appointment ToDomain(AppointmentDocument doc)
+    {
+        var status = Enum.TryParse<AppointmentStatus>(doc.Status, out var parsedStatus)
+            ? parsedStatus
+            : AppointmentStatus.Pending;
+
+        var services = doc.PlannedServices?
+            .Select(s => new PlannedService(s.ServiceId, s.ServiceName, s.UnitPrice, s.ToothNumber));
+
+        return Appointment.Rehydrate(
+            doc.Id,
+            doc.PatientId,
+            doc.DoctorId,
+            doc.ClinicId,
+            doc.StartsAt,
+            doc.EndsAt,
+            status,
+            doc.Reason,
+            doc.CreatedAt,
+            doc.UpdatedAt,
+            services);
+    }
 }
