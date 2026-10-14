@@ -35,6 +35,7 @@ public sealed class MongoDatabaseContext
     public IMongoCollection<RefreshTokenDocument> RefreshTokens => Database.GetCollection<RefreshTokenDocument>(CollectionNames.RefreshTokens);
     public IMongoCollection<ServiceDocument> Services => Database.GetCollection<ServiceDocument>(CollectionNames.Services);
     public IMongoCollection<ServiceCategoryDocument> ServiceCategories => Database.GetCollection<ServiceCategoryDocument>(CollectionNames.ServiceCategories);
+    public IMongoCollection<DiscountPromoDocument> DiscountPromos => Database.GetCollection<DiscountPromoDocument>(CollectionNames.DiscountPromos);
     public IMongoCollection<BsonDocument> AuditLogs => Database.GetCollection<BsonDocument>(CollectionNames.AuditLogs);
 
     public IMongoCollection<TDocument> GetCollection<TDocument>(string collectionName) =>

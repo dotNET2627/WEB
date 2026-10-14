@@ -85,5 +85,17 @@ public sealed class MongoIndexInitializer
                 Builders<ServiceCategoryDocument>.IndexKeys.Ascending(document => document.Name),
                 new CreateIndexOptions { Unique = true, Name = "uq_service_categories_name" }),
             cancellationToken: cancellationToken);
+
+        await _context.DiscountPromos.Indexes.CreateOneAsync(
+            new CreateIndexModel<DiscountPromoDocument>(
+                Builders<DiscountPromoDocument>.IndexKeys.Ascending(document => document.Code),
+                new CreateIndexOptions { Unique = true, Name = "uq_discount_promos_code" }),
+            cancellationToken: cancellationToken);
+
+        await _context.DiscountPromos.Indexes.CreateOneAsync(
+            new CreateIndexModel<DiscountPromoDocument>(
+                Builders<DiscountPromoDocument>.IndexKeys.Ascending(document => document.IsActive).Ascending(document => document.EndDate),
+                new CreateIndexOptions { Name = "ix_discount_promos_active_enddate" }),
+            cancellationToken: cancellationToken);
     }
 }
