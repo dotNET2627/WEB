@@ -12,8 +12,6 @@ import {
   AlertCircle,
   Headphones,
   User as UserIcon,
-  Sparkles,
-  ShieldCheck,
   ArrowRight,
   ArrowLeft
 } from "lucide-react";
@@ -576,6 +574,13 @@ function PatientLoginForm() {
                     <span>Đổi số</span>
                   </button>
                 </div>
+
+                {genericNotice && (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2 text-xs text-emerald-800" role="status">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{genericNotice}</span>
+                  </div>
+                )}
 
                 {/* 6 Auto-Advancing OTP Inputs */}
                 <div>

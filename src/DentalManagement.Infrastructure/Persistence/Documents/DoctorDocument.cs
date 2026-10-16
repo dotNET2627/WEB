@@ -5,39 +5,33 @@ namespace DentalManagement.Infrastructure.Persistence.Documents;
 [BsonIgnoreExtraElements]
 public sealed class DoctorDocument : MongoDocument
 {
-    [BsonElement("nguoidungid")]
+    [BsonElement("userId")]
     public Guid UserId { get; init; }
 
-    [BsonElement("phongkhamid")]
+    [BsonElement("clinicId")]
     public Guid? ClinicId { get; init; }
 
-    [BsonElement("sochungchihanhnghe")]
+    [BsonElement("medicalLicenseNumber")]
     public string MedicalLicenseNumber { get; init; } = string.Empty;
 
-    [BsonElement("sonamkinhnghiem")]
+    [BsonElement("yearsOfExperience")]
     public int YearsOfExperience { get; init; }
 
-    [BsonElement("gioithieu")]
+    [BsonElement("biography")]
     public string? Biography { get; init; }
 
-    [BsonElement("chuyenkhoa")]
+    [BsonElement("specialty")]
     public string? Specialty { get; init; }
 
-    [BsonElement("calamviec")]
+    [BsonElement("workSchedules")]
     public IReadOnlyCollection<WorkScheduleDocument> WorkSchedules { get; init; } = [];
-
-    [BsonElement("ngaytao")]
-    public DateTimeOffset? NgayTao { get; init; }
-
-    [BsonElement("ngaycapnhat")]
-    public DateTimeOffset? NgayCapNhat { get; init; }
 }
 
 [BsonIgnoreExtraElements]
 public sealed record WorkScheduleDocument(
     [property: BsonElement("id")] Guid Id,
-    [property: BsonElement("phongkhamid")] Guid? ClinicId,
-    [property: BsonElement("thutrongtuan")] int DayOfWeek,
-    [property: BsonElement("giobatdau")] string StartTime,
-    [property: BsonElement("gioketthuc")] string EndTime,
-    [property: BsonElement("dangapdung")] bool IsActive = true);
+    [property: BsonElement("clinicId")] Guid? ClinicId,
+    [property: BsonElement("dayOfWeek")] int DayOfWeek,
+    [property: BsonElement("startTime")] string StartTime,
+    [property: BsonElement("endTime")] string EndTime,
+    [property: BsonElement("isActive")] bool IsActive = true);

@@ -18,15 +18,13 @@ internal static class DoctorDocumentMapper
             .Select(s => new WorkScheduleDocument(s.Id, s.ClinicId, s.DayOfWeek, s.StartTime, s.EndTime, s.IsActive))
             .ToArray(),
         CreatedAt = doctor.CreatedAt,
-        UpdatedAt = doctor.UpdatedAt,
-        NgayTao = doctor.CreatedAt,
-        NgayCapNhat = doctor.UpdatedAt
+        UpdatedAt = doctor.UpdatedAt
     };
 
     public static Doctor ToDomain(DoctorDocument document)
     {
-        var createdAt = document.NgayTao ?? (document.CreatedAt != default ? document.CreatedAt : DateTimeOffset.UtcNow);
-        var updatedAt = document.NgayCapNhat ?? (document.UpdatedAt != default ? document.UpdatedAt : DateTimeOffset.UtcNow);
+        var createdAt = document.CreatedAt != default ? document.CreatedAt : DateTimeOffset.UtcNow;
+        var updatedAt = document.UpdatedAt != default ? document.UpdatedAt : DateTimeOffset.UtcNow;
 
         var schedules = document.WorkSchedules
             .Select(s => WorkScheduleItem.Create(s.Id, s.ClinicId, s.DayOfWeek, s.StartTime, s.EndTime, s.IsActive))

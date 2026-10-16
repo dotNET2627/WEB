@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createPatientSession } from "@/lib/otp-security";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Giả lập xác thực OAuth Google token / ID Token phía server
     // Trong môi trường production, tích hợp google-auth-library verifyIdToken

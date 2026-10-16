@@ -1,13 +1,15 @@
 /**
  * ============================================================================
+ * [TÀI LIỆU THAM KHẢO / LEGACY REFERENCE SCHEMA]
  * DENTAL CLINIC MANAGEMENT SYSTEM DATABASE SCHEMA (MONGODB / MONGOSH SCRIPT)
- * Hệ thống Quản lý Phòng khám Nha khoa Tư nhân
- * Chuyển đổi từ: PostgreSQL DDL (34 Bảng & 11 Enums) sang MongoDB NoSQL
  * 
- * Cách dùng:
- * 1. Chạy trong mongosh: 
- *    mongosh "mongodb://localhost:27017/DentalManagement" databaseschema.mongo.js
- * 2. Hoặc mở MongoDB Compass -> Chạy trong tab "Mongosh" / "Playground"
+ * LƯU Ý QUAN TRỌNG:
+ * File này chỉ lưu trữ nhằm mục đích tham khảo cấu trúc chuyển đổi ban đầu từ SQL.
+ * Ứng dụng DentalManagement (.NET) sử dụng cơ chế Code-First:
+ * - Tên Collection & Fields: Chuẩn hóa theo CollectionNames.cs và các Document classes (.NET).
+ * - Indexes: Khởi tạo tự động bởi MongoIndexInitializer / HostedService khi chạy app.
+ * - Seed Data: Khởi tạo tự động bởi DatabaseSeedHostedService khi chạy app.
+ * KHÔNG CHẠY TRỰC TIẾP FILE NÀY TRONG MONGOSH ĐỂ TRÁNH XUNG ĐỘT SCHEMA VALIDATOR.
  * ============================================================================
  */
 

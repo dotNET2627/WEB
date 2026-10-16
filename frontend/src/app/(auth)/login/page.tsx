@@ -1,12 +1,11 @@
 "use client";
 
 import React, { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiClientError } from "@/lib/api-client";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("returnUrl") || "/dashboard";
 

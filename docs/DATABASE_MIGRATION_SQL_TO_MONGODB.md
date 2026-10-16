@@ -188,17 +188,22 @@ Tất cả 11 Enums trong SQL được thiết lập thành các mảng giá tr�
 
 ---
 
-## 5. Hướng dẫn chạy Script trên MongoDB
+## 5. Cơ chế khởi tạo Schema & Dữ liệu trên MongoDB (Code-First)
 
-File kịch bản khởi tạo Schema chính: `databaseschema.mongo.js` (nằm ở thư mục gốc dự án).
+Hệ thống quản lý dữ liệu theo mô hình **Code-First** trong .NET:
+- **Tên Collection:** Được quản lý tập trung tại `DentalManagement.Infrastructure.Persistence.CollectionNames`.
+- **Cấu trúc Document & Mapping:** Định nghĩa tại các Document class và `BsonElement` chuẩn English camelCase.
+- **Tạo Indexes:** Tự động thực thi bởi `MongoIndexInitializer` (thông qua `MongoIndexInitializerHostedService`) ngay khi ứng dụng Backend khởi động.
+- **Seed Data:** Tự động tạo Roles, Permissions, Clinic mặc định, tài khoản SuperAdmin và Bác sĩ mẫu bởi `DatabaseSeedHostedService`.
 
-### Cách 1: Sử dụng MongoDB Shell (`mongosh`)
-```bash
-mongosh "mongodb://localhost:27017/DentalManagement" databaseschema.mongo.js
-```
+> **Khởi chạy hệ thống:**
+> ```bash
+> # Khởi động MongoDB (nếu dùng docker-compose)
+> docker compose up -d
+> 
+> # Chạy Backend API (Tự động khởi tạo Index & Seed Data)
+> cd src/DentalManagement.Api
+> dotnet run
+> ```
 
-### Cách 2: Sử dụng MongoDB Compass
-1. Mở MongoDB Compass và kết nối tới server MongoDB cục bộ (`mongodb://localhost:27017`).
-2. Mở thanh công cụ bên dưới có tab **`>_ MONGOSH`** (hoặc mở script playground).
-3. Copy toàn bộ nội dung file [databaseschema.mongo.js](file:///d:/Khanh/.Net/databaseschema.mongo.js) và dán vào, sau đó nhấn **Enter**.
-4. Toàn bộ Collections, Schemas, Validators, Indexes và Seed Data sẽ được tạo tự động và hiển thị trong database `DentalManagement`.
+*(Ghi chú: File script tham khảo chuyển đổi ban đầu được lưu trữ tại `docs/reference/legacy_databaseschema.mongo.js` chỉ nhằm mục đích tra cứu mô hình mapping).*

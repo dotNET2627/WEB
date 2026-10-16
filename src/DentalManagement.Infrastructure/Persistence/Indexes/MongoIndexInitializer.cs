@@ -68,36 +68,36 @@ public sealed class MongoIndexInitializer
                 new CreateIndexOptions { ExpireAfter = TimeSpan.Zero, Name = "ttl_refresh_tokens_expires_at" }),
             cancellationToken: cancellationToken);
 
-        // Clinics (phongkham)
+        // Clinics
         await _context.Clinics.Indexes.CreateOneAsync(
             new CreateIndexModel<ClinicDocument>(
                 Builders<ClinicDocument>.IndexKeys.Ascending(document => document.Name),
-                new CreateIndexOptions { Name = "ix_phongkham_tenphongkham" }),
+                new CreateIndexOptions { Name = "ix_clinics_name" }),
             cancellationToken: cancellationToken);
 
-        // Doctors (bacsi)
+        // Doctors
         await _context.Doctors.Indexes.CreateOneAsync(
             new CreateIndexModel<DoctorDocument>(
                 Builders<DoctorDocument>.IndexKeys.Ascending(document => document.UserId),
-                new CreateIndexOptions { Unique = true, Name = "uq_bacsi_nguoidungid" }),
+                new CreateIndexOptions { Unique = true, Name = "uq_doctors_user_id" }),
             cancellationToken: cancellationToken);
 
         await _context.Doctors.Indexes.CreateOneAsync(
             new CreateIndexModel<DoctorDocument>(
                 Builders<DoctorDocument>.IndexKeys.Ascending(document => document.MedicalLicenseNumber),
-                new CreateIndexOptions { Unique = true, Name = "uq_bacsi_sochungchihanhnghe" }),
+                new CreateIndexOptions { Unique = true, Name = "uq_doctors_medical_license_number" }),
             cancellationToken: cancellationToken);
 
         await _context.Doctors.Indexes.CreateOneAsync(
             new CreateIndexModel<DoctorDocument>(
                 Builders<DoctorDocument>.IndexKeys.Ascending(document => document.ClinicId),
-                new CreateIndexOptions { Name = "ix_bacsi_phongkhamid" }),
+                new CreateIndexOptions { Name = "ix_doctors_clinic_id" }),
             cancellationToken: cancellationToken);
 
         await _context.Doctors.Indexes.CreateOneAsync(
             new CreateIndexModel<DoctorDocument>(
-                Builders<DoctorDocument>.IndexKeys.Ascending("calamviec.thutrongtuan"),
-                new CreateIndexOptions { Name = "ix_bacsi_calamviec_thutrongtuan" }),
+                Builders<DoctorDocument>.IndexKeys.Ascending("workSchedules.dayOfWeek"),
+                new CreateIndexOptions { Name = "ix_doctors_work_schedules_day_of_week" }),
             cancellationToken: cancellationToken);
     }
 }

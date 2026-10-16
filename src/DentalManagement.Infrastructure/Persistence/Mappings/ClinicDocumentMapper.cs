@@ -19,15 +19,13 @@ internal static class ClinicDocumentMapper
         Logo = clinic.Logo,
         IsActive = clinic.IsActive,
         CreatedAt = clinic.CreatedAt,
-        UpdatedAt = clinic.UpdatedAt,
-        NgayTao = clinic.CreatedAt,
-        NgayCapNhat = clinic.UpdatedAt
+        UpdatedAt = clinic.UpdatedAt
     };
 
     public static Clinic ToDomain(ClinicDocument document)
     {
-        var createdAt = document.NgayTao ?? (document.CreatedAt != default ? document.CreatedAt : DateTimeOffset.UtcNow);
-        var updatedAt = document.NgayCapNhat ?? (document.UpdatedAt != default ? document.UpdatedAt : DateTimeOffset.UtcNow);
+        var createdAt = document.CreatedAt != default ? document.CreatedAt : DateTimeOffset.UtcNow;
+        var updatedAt = document.UpdatedAt != default ? document.UpdatedAt : DateTimeOffset.UtcNow;
 
         return Clinic.Rehydrate(
             document.Id,

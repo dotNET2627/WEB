@@ -1,13 +1,29 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
+import {
+  Calendar,
+  dateFnsLocalizer,
+  Views,
+  type View,
+  type CalendarProps,
+} from "react-big-calendar";
 import withDragAndDrop, {
-  type withDragAndDropProps,
+  type EventInteractionArgs,
 } from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { vi } from "date-fns/locale";
 import type { AppointmentListItem } from "@/types/appointment";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface CalEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  resource: AppointmentListItem;
+  isDraggable: boolean;
+}
 
 // ─── date-fns localizer ──────────────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
@@ -19,18 +35,9 @@ const localizer = dateFnsLocalizer({
 });
 
 // ─── Drag-and-drop calendar ───────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const DragAndDropCalendar = withDragAndDrop(Calendar as any);
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface CalEvent {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  resource: AppointmentListItem;
-  isDraggable: boolean;
-}
+const DragAndDropCalendar = withDragAndDrop<CalEvent, object>(
+  Calendar as unknown as React.ComponentType<CalendarProps<CalEvent, object>>
+);
 
 // ─── Status colours ───────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
@@ -76,7 +83,7 @@ export function AppointmentCalendarInner({
   onEventDrop,
   onEventClick,
 }: AppointmentCalendarInnerProps) {
-  const [view, setView] = useState<string>(Views.WEEK);
+  const [view, setView] = useState<View>(Views.WEEK);
   const [date, setDate] = useState(new Date());
 
   const events = useMemo(() => appointments.map(toCalEvent), [appointments]);
@@ -94,12 +101,10 @@ export function AppointmentCalendarInner({
   );
 
   // Drag & drop handler
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEventDrop = useCallback(
-    async ({ event, start, end }: any) => {
-      const e = event as CalEvent;
-      if (!e.isDraggable) return;
-      const ok = await onEventDrop(e.id, new Date(start), end ? new Date(end) : null);
+    async ({ event, start, end }: EventInteractionArgs<CalEvent>) => {
+      if (!event.isDraggable) return;
+      const ok = await onEventDrop(event.id, new Date(start), end ? new Date(end) : null);
       // react-big-calendar applies the move optimistically; if the API call
       // fails we force a re-render by toggling date (simplest revert strategy)
       if (!ok) setDate((d) => new Date(d));
@@ -107,18 +112,16 @@ export function AppointmentCalendarInner({
     [onEventDrop]
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const eventPropGetter = useCallback((event: any) => {
-    const e = event as CalEvent;
-    const color = STATUS_COLORS[e.resource.status] ?? "#64748b";
+  const eventPropGetter = useCallback((event: CalEvent) => {
+    const color = STATUS_COLORS[event.resource.status] ?? "#64748b";
     return {
       style: {
         backgroundColor: color,
         borderColor: color,
         color: "#fff",
         borderRadius: "6px",
-        opacity: e.isDraggable ? 1 : 0.7,
-        cursor: e.isDraggable ? "grab" : "default",
+        opacity: event.isDraggable ? 1 : 0.7,
+        cursor: event.isDraggable ? "grab" : "default",
       },
     };
   }, []);
@@ -162,15 +165,15 @@ export function AppointmentCalendarInner({
         <DragAndDropCalendar
           localizer={localizer}
           events={events}
-          view={view as any}
+          view={view}
           date={date}
-          onView={(v: any) => setView(v)}
+          onView={(v: View) => setView(v)}
           onNavigate={(d: Date) => setDate(d)}
           onRangeChange={handleRangeChange}
           onEventDrop={handleEventDrop}
-          onSelectEvent={(event: any) => onEventClick((event as CalEvent).resource)}
+          onSelectEvent={(event: CalEvent) => onEventClick(event.resource)}
           eventPropGetter={eventPropGetter}
-          draggableAccessor={(event: any) => (event as CalEvent).isDraggable}
+          draggableAccessor={(event: CalEvent) => event.isDraggable}
           messages={messages}
           culture="vi"
           views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
