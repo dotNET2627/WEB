@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { ClinicSwitcher } from "@/components/layout/clinic-switcher";
 
 interface AdminHeaderProps {
   onOpenMobile?: () => void;
@@ -42,6 +43,9 @@ export function AdminHeader({ onOpenMobile }: AdminHeaderProps) {
             <span>/</span>
             <span className="text-slate-200 font-medium">Control Central</span>
           </div>
+        </div>
+        <div className="ml-4">
+          <ClinicSwitcher />
         </div>
       </div>
 

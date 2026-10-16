@@ -29,7 +29,7 @@ public sealed class SetDoctorWorkSchedulesCommandValidator : AbstractValidator<S
         RuleForEach(x => x.Schedules).ChildRules(schedule =>
         {
             schedule.RuleFor(s => s.DayOfWeek)
-                .InclusiveBetween(1, 7).WithMessage("Thứ trong tuần phải từ 1 (Chủ nhật) đến 7 (Thứ bảy).");
+                .InclusiveBetween(1, 7).WithMessage("Thứ trong tuần phải từ 1 (Thứ Hai) đến 7 (Chủ Nhật).");
 
             schedule.RuleFor(s => s.StartTime)
                 .NotEmpty().WithMessage("Giờ bắt đầu không được để trống.")

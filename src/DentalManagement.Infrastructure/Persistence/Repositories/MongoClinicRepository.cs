@@ -50,6 +50,10 @@ public sealed class MongoClinicRepository : IClinicRepository
         bool? activeOnly,
         CancellationToken cancellationToken)
     {
+        // Handle invalid page numbers
+        if (page <= 0) page = 1;
+        if (pageSize <= 0) pageSize = 20;
+
         var builder = Builders<ClinicDocument>.Filter;
         var filter = builder.Empty;
 

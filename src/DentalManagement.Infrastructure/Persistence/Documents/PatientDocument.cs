@@ -24,6 +24,9 @@ public sealed class PatientDocument : MongoDocument
 
     [BsonElement("medicalHistory")]
     public IReadOnlyCollection<MedicalHistoryDocument> MedicalHistory { get; init; } = [];
+
+    [BsonElement("teeth")]
+    public IReadOnlyCollection<ToothConditionDocument> Teeth { get; init; } = [];
 }
 
 public sealed record MedicalHistoryDocument(
@@ -32,3 +35,12 @@ public sealed record MedicalHistoryDocument(
     string? Severity,
     string? Note,
     DateTimeOffset UpdatedAt);
+
+/// <summary>Odontogram entry stored as a token string ("caries", "root_canal", ...).</summary>
+public sealed record ToothConditionDocument(
+    int ToothNumber,
+    string Condition,
+    IReadOnlyCollection<string> Surfaces,
+    string? Note,
+    DateTimeOffset UpdatedAt,
+    string? UpdatedBy);

@@ -17,6 +17,15 @@ internal static class PatientDocumentMapper
         UpdatedAt = patient.UpdatedAt,
         MedicalHistory = patient.MedicalHistory
             .Select(item => new MedicalHistoryDocument(item.Type, item.Name, item.Severity, item.Note, item.UpdatedAt))
+            .ToArray(),
+        Teeth = patient.Teeth
+            .Select(tooth => new ToothConditionDocument(
+                tooth.ToothNumber,
+                tooth.Condition.ToToken(),
+                tooth.Surfaces.Select(surface => surface.ToToken()).ToArray(),
+                tooth.Note,
+                tooth.UpdatedAt,
+                tooth.UpdatedBy))
             .ToArray()
     };
 
@@ -29,6 +38,22 @@ internal static class PatientDocumentMapper
         {
             patient.AddMedicalHistory(new MedicalHistoryItem(item.Type, item.Name, item.Severity, item.Note, item.UpdatedAt));
         }
+
+        foreach (var tooth in document.Teeth)
+        {
+            if (!ToothCondition.IsValidToothNumber(tooth.ToothNumber) ||
+                !ToothConditionTypeExtensions.TryParse(tooth.Condition, out var condition) ||
+                !ToothSurfaceExtensions.TryParseAll(tooth.Surfaces, out var surfaces))
+            {
+                continue; // Skip corrupt legacy entries instead of failing the whole patient.
+            }
+
+            patient.UpsertToothCondition(new ToothCondition(
+                tooth.ToothNumber, condition, surfaces, tooth.Note, tooth.UpdatedAt, tooth.UpdatedBy));
+        }
+
+        // AddMedicalHistory/UpsertToothCondition bump UpdatedAt; restore the stored audit dates last.
+        patient.SetAuditDates(document.CreatedAt, document.UpdatedAt);
 
         return patient;
     }

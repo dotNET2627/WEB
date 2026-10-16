@@ -1,8 +1,11 @@
+using DentalManagement.Api.Extensions;
 using DentalManagement.Application.Abstractions.Services;
 using DentalManagement.Application.Common;
 using DentalManagement.Application.Patients;
+using DentalManagement.Application.Patients.Odontogram;
 using DentalManagement.Application.Security;
 using DentalManagement.Domain.Common;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DentalManagement.Api.Endpoints;
@@ -18,21 +21,7 @@ public static class PatientEndpoints
             .RequireAuthorization();
 
         // Lấy phòng khám từ tài khoản đang đăng nhập.
-        group.AddEndpointFilter(async (context, next) =>
-        {
-            var user = context.HttpContext.RequestServices
-                .GetRequiredService<ICurrentUser>();
-
-            if (user.ClinicId is not { } clinicId || clinicId == Guid.Empty)
-            {
-                return Results.Problem(
-                    statusCode: 403,
-                    title: "Chưa chọn phòng khám",
-                    detail: "Hãy đăng nhập hoặc chuyển sang phòng khám có quyền truy cập.");
-            }
-
-            return await next(context);
-        });
+        group.RequireClinic();
 
         // Danh sách, phân trang và tìm kiếm.
         group.MapGet("", async (
@@ -164,6 +153,132 @@ public static class PatientEndpoints
         .Produces(204)
         .ProducesProblem(404);
 
+        // ---- Tiền sử bệnh lý (medical history) ----
+
+        // Danh sách tiền sử bệnh lý.
+        group.MapGet("/{id:guid}/medical-history", async (
+            Guid id,
+            [FromServices] ICurrentUser user,
+            [FromServices] PatientService service,
+            CancellationToken ct) =>
+        {
+            var result = await service.GetMedicalHistoryAsync(
+                new GetMedicalHistoryQuery(user.ClinicId!.Value, id), ct);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : ToProblem(result.Error!);
+        })
+        .WithName("GetPatientMedicalHistory")
+        .RequireAuthorization(DefaultPermissions.Patients.Read)
+        .Produces<IReadOnlyList<MedicalHistoryItemDto>>()
+        .ProducesProblem(404);
+
+        // Thêm một mục tiền sử bệnh lý.
+        group.MapPost("/{id:guid}/medical-history", async (
+            Guid id,
+            MedicalHistoryRequest request,
+            [FromServices] ICurrentUser user,
+            [FromServices] PatientService service,
+            CancellationToken ct) =>
+        {
+            var result = await service.AddMedicalHistoryAsync(
+                new AddMedicalHistoryCommand(
+                    user.ClinicId!.Value,
+                    id,
+                    request.Type,
+                    request.Name,
+                    request.Severity,
+                    request.Notes),
+                ct);
+
+            return result.IsSuccess
+                ? Results.Created($"/api/v1/patients/{id}/medical-history", result.Value)
+                : ToProblem(result.Error!);
+        })
+        .WithName("AddPatientMedicalHistory")
+        .RequireAuthorization(DefaultPermissions.Patients.Update)
+        .Produces<MedicalHistoryItemDto>(201)
+        .ProducesProblem(400)
+        .ProducesProblem(404);
+
+        // Xóa một mục tiền sử bệnh lý theo chỉ số.
+        group.MapDelete("/{id:guid}/medical-history/{index:int}", async (
+            Guid id,
+            int index,
+            [FromServices] ICurrentUser user,
+            [FromServices] PatientService service,
+            CancellationToken ct) =>
+        {
+            var result = await service.RemoveMedicalHistoryAsync(
+                new RemoveMedicalHistoryCommand(user.ClinicId!.Value, id, index), ct);
+
+            return result.IsSuccess
+                ? Results.NoContent()
+                : ToProblem(result.Error!);
+        })
+        .WithName("DeletePatientMedicalHistory")
+        .RequireAuthorization(DefaultPermissions.Patients.Update)
+        .Produces(204)
+        .ProducesProblem(400)
+        .ProducesProblem(404);
+
+        // ---- Sơ đồ răng (odontogram) ----
+
+        // Toàn bộ sơ đồ răng của bệnh nhân.
+        group.MapGet("/{id:guid}/odontogram", async (
+            Guid id,
+            [FromServices] ICurrentUser user,
+            [FromServices] IQueryHandler<GetOdontogramQuery, Result<IReadOnlyList<ToothConditionDto>>> handler,
+            CancellationToken ct) =>
+        {
+            var result = await handler.Handle(
+                new GetOdontogramQuery(user.ClinicId!.Value, id), ct);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : ToProblem(result.Error!);
+        })
+        .WithName("GetPatientOdontogram")
+        .RequireAuthorization(DefaultPermissions.Patients.Read)
+        .Produces<IReadOnlyList<ToothConditionDto>>()
+        .ProducesProblem(404);
+
+        // Cập nhật tình trạng một răng (healthy = xóa ghi chú của răng).
+        group.MapPut("/{id:guid}/odontogram/{toothNumber:int}", async (
+            Guid id,
+            int toothNumber,
+            ToothConditionRequest request,
+            [FromServices] ICurrentUser user,
+            [FromServices] ICommandHandler<UpdateToothConditionCommand, Result<ToothConditionDto>> handler,
+            [FromServices] IValidator<UpdateToothConditionCommand> validator,
+            CancellationToken ct) =>
+        {
+            var command = new UpdateToothConditionCommand(
+                user.ClinicId!.Value,
+                id,
+                toothNumber,
+                request.Condition,
+                request.Surfaces,
+                request.Notes,
+                user.UserId?.ToString());
+
+            var validation = await validator.ValidateAsync(command, ct);
+            if (!validation.IsValid)
+                return Results.ValidationProblem(validation.ToDictionary());
+
+            var result = await handler.Handle(command, ct);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : ToProblem(result.Error!);
+        })
+        .WithName("UpdatePatientToothCondition")
+        .RequireAuthorization(DefaultPermissions.Patients.Update)
+        .Produces<ToothConditionDto>()
+        .ProducesProblem(400)
+        .ProducesProblem(404);
+
         return endpoints;
     }
 
@@ -192,3 +307,16 @@ public sealed record PatientRequest(
     DateOnly? DateOfBirth = null);
 
 public sealed record PatientCreatedResponse(Guid Id);
+
+/// <summary>Body for POST /patients/{id}/medical-history (extra client fields such as id/createdAt are ignored).</summary>
+public sealed record MedicalHistoryRequest(
+    string Type,
+    string Name,
+    string? Severity = null,
+    string? Notes = null);
+
+/// <summary>Body for PUT /patients/{id}/odontogram/{toothNumber}.</summary>
+public sealed record ToothConditionRequest(
+    string Condition,
+    IReadOnlyList<string>? Surfaces = null,
+    string? Notes = null);

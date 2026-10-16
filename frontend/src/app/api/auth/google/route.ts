@@ -16,7 +16,7 @@ export async function POST() {
       id: "patient-google-" + Date.now().toString().slice(-6),
       email: googleEmail,
       fullName: googleName,
-      phoneNumber: "0912345678",
+      phoneNumber: null,
       patientCode: "BN-GOOGLE",
       activeClinicId: null,
       roles: ["Patient"],

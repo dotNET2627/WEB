@@ -528,7 +528,7 @@ export default function ClinicsPage() {
         </div>
 
         {/* Sticky Bottom Action Bar as per ADMIN_UI_RULES.md mục 5 */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-[var(--shadow-overlay)]">
+        <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-20 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-[var(--shadow-overlay)]">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="text-[var(--text-sm)] text-[var(--color-text-muted)]">
               {isDirty ? (

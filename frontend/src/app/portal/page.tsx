@@ -471,7 +471,7 @@ export default function PatientPortalLandingPage() {
               className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl font-bold text-base text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/25 transition cursor-pointer"
             >
               <Headphones className="w-5 h-5" />
-              <span>Gọi Hotline 1900 6868 (24/7)</span>
+              <span>Gọi Hotline 1900 6868 (Giờ làm việc)</span>
             </a>
 
             <Link

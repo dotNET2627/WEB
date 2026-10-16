@@ -1,9 +1,12 @@
 using DentalManagement.Application.Abstractions.Persistence;
 using DentalManagement.Application.Abstractions.Services;
+using DentalManagement.Application.Common;
 using DentalManagement.Application.Security;
+using DentalManagement.Domain.Appointments;
 using DentalManagement.Domain.Clinics;
 using DentalManagement.Domain.Doctors;
 using DentalManagement.Domain.Identity;
+using DentalManagement.Domain.Patients;
 
 namespace DentalManagement.Api.HostedServices;
 
@@ -258,6 +261,148 @@ public sealed class DatabaseSeedHostedService : IHostedService
                 await doctorRepo.AddAsync(doc3, cancellationToken);
 
                 _logger.LogInformation("Đã khởi tạo 3 Bác sĩ mẫu kèm hồ sơ chuyên môn và lịch trực tuần hoàn.");
+            }
+
+            // Seed Receptionist user
+            var receptionistEmail = "letan@clinic.vn";
+            var existingReceptionist = await userRepo.GetByEmailAsync(receptionistEmail, cancellationToken);
+            if (existingReceptionist is null)
+            {
+                var receptionistUser = new User(
+                    Guid.NewGuid(),
+                    receptionistEmail,
+                    "Nhân Viên Lễ Tân Thử Nghiệm",
+                    passwordHasher.Hash("Password123!"),
+                    defaultClinic.Id);
+                receptionistUser.AssignRole(receptionistRole!.Id, defaultClinic.Id, adminUser.Id, clock.UtcNow);
+                await userRepo.AddAsync(receptionistUser, cancellationToken);
+                _logger.LogInformation("Đã khởi tạo tài khoản Lễ tân mẫu: {Email} / Password123!", receptionistEmail);
+            }
+
+            // Seed sample patients
+            var patientRepo = scope.ServiceProvider.GetRequiredService<IPatientRepository>();
+            var existingPatients = await patientRepo.GetPageAsync(defaultClinic.Id, new PagedQuery(1, 1), null, cancellationToken);
+            Patient patient1;
+            Patient patient2;
+            Patient patient3;
+
+            if (existingPatients.TotalCount == 0)
+            {
+                patient1 = new Patient(Guid.NewGuid(), defaultClinic.Id, "Bệnh nhân thử 001", "BN-2026-0001");
+                patient1.UpdateContact("Bệnh nhân thử 001", "0900 000 001", new DateOnly(1990, 5, 15));
+                patient1.AddMedicalHistory(new MedicalHistoryItem("allergy", "Penicillin", "high", "Dị ứng nổi mề đay và khó thở khi dùng kháng sinh Beta-lactam", clock.UtcNow));
+                patient1.AddMedicalHistory(new MedicalHistoryItem("condition", "Tăng huyết áp", "moderate", "Huyết áp ổn định 135/85 mmHg khi dùng Amlodipine 5mg", clock.UtcNow));
+                patient1.UpsertToothCondition(new ToothCondition(16, ToothConditionType.Caries, [ToothSurface.O], "Sâu rãnh mặt nhai độ 1", clock.UtcNow, "BS. CKI Trần Minh Trí"));
+                patient1.UpsertToothCondition(new ToothCondition(36, ToothConditionType.Crown, [ToothSurface.M, ToothSurface.O, ToothSurface.D], "Mão toàn sứ Zirconia sau điều trị tủy", clock.UtcNow, "BS. CKI Trần Minh Trí"));
+                await patientRepo.AddAsync(patient1, cancellationToken);
+
+                patient2 = new Patient(Guid.NewGuid(), defaultClinic.Id, "Bệnh nhân thử 002", "BN-2026-0002");
+                patient2.UpdateContact("Bệnh nhân thử 002", "0900 000 002", new DateOnly(1985, 11, 20));
+                patient2.AddMedicalHistory(new MedicalHistoryItem("medication", "Aspirin 81mg", "moderate", "Thuốc chống đông máu tim mạch, cần hội chẩn trước phẫu thuật", clock.UtcNow));
+                patient2.UpsertToothCondition(new ToothCondition(21, ToothConditionType.Caries, [ToothSurface.B, ToothSurface.M], "Mẻ góc cắn và sâu men mặt ngoài", clock.UtcNow, "ThS. BS Lê Thanh Hương"));
+                await patientRepo.AddAsync(patient2, cancellationToken);
+
+                patient3 = new Patient(Guid.NewGuid(), defaultClinic.Id, "Bệnh nhân thử 003", "BN-2026-0003");
+                patient3.UpdateContact("Bệnh nhân thử 003", "0900 000 003", new DateOnly(2002, 8, 3));
+                patient3.AddMedicalHistory(new MedicalHistoryItem("none", "Chưa ghi nhận dị ứng", null, "Đã khai thác bệnh sử và khám sàng lọc", clock.UtcNow));
+                patient3.UpsertToothCondition(new ToothCondition(48, ToothConditionType.Extracted, [], "Răng khôn hàm dưới mọc lệch kẹt đã nhổ tiểu phẫu", clock.UtcNow, "BS. Nguyễn Hoàng Nam"));
+                await patientRepo.AddAsync(patient3, cancellationToken);
+
+                _logger.LogInformation("Đã khởi tạo 3 Bệnh nhân mẫu với tiền sử bệnh lý và sơ đồ răng FDI.");
+            }
+            else
+            {
+                var patientList = await patientRepo.GetPageAsync(defaultClinic.Id, new PagedQuery(1, 3), null, cancellationToken);
+                patient1 = patientList.Items.ElementAtOrDefault(0) ?? new Patient(Guid.NewGuid(), defaultClinic.Id, "Bệnh nhân thử 001");
+                patient2 = patientList.Items.ElementAtOrDefault(1) ?? patient1;
+                patient3 = patientList.Items.ElementAtOrDefault(2) ?? patient1;
+            }
+
+            // Seed sample appointments
+            var appointmentRepo = scope.ServiceProvider.GetRequiredService<IAppointmentRepository>();
+            var existingAppts = await appointmentRepo.GetByDateRangeAsync(
+                clock.UtcNow.AddDays(-30),
+                clock.UtcNow.AddDays(30),
+                null,
+                cancellationToken);
+
+            if (existingAppts.Count == 0)
+            {
+                var allDoctors = await doctorRepo.GetPagedAsync(1, 10, defaultClinic.Id, null, null, cancellationToken);
+                var doc1Item = allDoctors.Items.ElementAtOrDefault(0);
+                var doc2Item = allDoctors.Items.ElementAtOrDefault(1) ?? doc1Item;
+                var doc3Item = allDoctors.Items.ElementAtOrDefault(2) ?? doc1Item;
+
+                if (doc1Item is not null)
+                {
+                    var today = clock.UtcNow.Date;
+
+                    // Lịch 1: Hôm nay 09:00 - Cấy ghép Implant (Confirmed)
+                    var appt1Start = today.AddHours(9);
+                    var appt1 = Appointment.Rehydrate(
+                        Guid.NewGuid(),
+                        patient1.Id,
+                        doc1Item.Id,
+                        defaultClinic.Id,
+                        appt1Start,
+                        appt1Start.AddHours(1),
+                        AppointmentStatus.Confirmed,
+                        "Cấy ghép Implant Straumann đơn lẻ răng 36",
+                        clock.UtcNow,
+                        clock.UtcNow,
+                        [new PlannedService(Guid.NewGuid(), "Cấy ghép Implant Straumann đơn lẻ", 28000000m, "36")]);
+                    await appointmentRepo.AddAsync(appt1, cancellationToken);
+
+                    // Lịch 2: Hôm nay 14:00 - Niềng răng (Pending)
+                    var appt2Start = today.AddHours(14);
+                    var appt2 = Appointment.Rehydrate(
+                        Guid.NewGuid(),
+                        patient2.Id,
+                        doc2Item!.Id,
+                        defaultClinic.Id,
+                        appt2Start,
+                        appt2Start.AddMinutes(45),
+                        AppointmentStatus.Pending,
+                        "Tư vấn niềng răng khay trong suốt Invisalign",
+                        clock.UtcNow,
+                        clock.UtcNow,
+                        [new PlannedService(Guid.NewGuid(), "Khám & Tư vấn chỉnh nha máng trong suốt", 500000m, null)]);
+                    await appointmentRepo.AddAsync(appt2, cancellationToken);
+
+                    // Lịch 3: Ngày mai 10:00 - Khám tổng quát & Lấy cao răng (Confirmed)
+                    var appt3Start = today.AddDays(1).AddHours(10);
+                    var appt3 = Appointment.Rehydrate(
+                        Guid.NewGuid(),
+                        patient3.Id,
+                        doc3Item!.Id,
+                        defaultClinic.Id,
+                        appt3Start,
+                        appt3Start.AddMinutes(30),
+                        AppointmentStatus.Confirmed,
+                        "Khám tổng quát và lấy cao răng toàn hàm",
+                        clock.UtcNow,
+                        clock.UtcNow,
+                        [new PlannedService(Guid.NewGuid(), "Cạo vôi răng & Đánh bóng toàn hàm", 350000m, null)]);
+                    await appointmentRepo.AddAsync(appt3, cancellationToken);
+
+                    // Lịch 4: Hôm qua 15:00 - Trám răng (Completed)
+                    var appt4Start = today.AddDays(-1).AddHours(15);
+                    var appt4 = Appointment.Rehydrate(
+                        Guid.NewGuid(),
+                        patient1.Id,
+                        doc3Item.Id,
+                        defaultClinic.Id,
+                        appt4Start,
+                        appt4Start.AddMinutes(45),
+                        AppointmentStatus.Completed,
+                        "Trám răng thẩm mỹ Composite răng 16",
+                        clock.UtcNow.AddDays(-1),
+                        clock.UtcNow.AddDays(-1),
+                        [new PlannedService(Guid.NewGuid(), "Trám răng thẩm mỹ Composite", 450000m, "16")]);
+                    await appointmentRepo.AddAsync(appt4, cancellationToken);
+
+                    _logger.LogInformation("Đã khởi tạo 4 Lịch hẹn mẫu phân bổ cho các bác sĩ và bệnh nhân.");
+                }
             }
         }
         catch (Exception ex)

@@ -8,9 +8,9 @@ export default function PatientDashboardPage() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
-  const displayName = user?.fullName || "Bệnh nhân";
-  const patientCode = user?.patientCode || "BN-2026-9812";
-  const phone = user?.phoneNumber || user?.email?.split("@")[0] || "0912345678";
+  const displayName = user?.fullName || "Bệnh nhân Kiểm thử";
+  const patientCode = user?.patientCode || (user?.id ? `BN-${user.id.slice(0, 6).toUpperCase()}` : "BN-2026-8888");
+  const phone = user?.phoneNumber || user?.email?.split("@")[0] || "0900 000 001";
 
   const handleQuickBook = (e: React.FormEvent) => {
     e.preventDefault();

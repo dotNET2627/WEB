@@ -23,7 +23,7 @@ public sealed class AssignWorkScheduleCommandValidator : AbstractValidator<Assig
             .NotEmpty().WithMessage("ID bác sĩ không được để trống.");
 
         RuleFor(x => x.DayOfWeek)
-            .InclusiveBetween(1, 7).WithMessage("Thứ trong tuần phải từ 1 (Chủ nhật) đến 7 (Thứ bảy).");
+            .InclusiveBetween(1, 7).WithMessage("Thứ trong tuần phải từ 1 (Thứ Hai) đến 7 (Chủ Nhật).");
 
         RuleFor(x => x.StartTime)
             .NotEmpty().WithMessage("Giờ bắt đầu không được để trống.")

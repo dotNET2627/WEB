@@ -18,7 +18,7 @@ public sealed record WorkScheduleItem(
     {
         if (dayOfWeek is < 1 or > 7)
         {
-            throw new ArgumentOutOfRangeException(nameof(dayOfWeek), "DayOfWeek must be between 1 (Sunday) and 7 (Saturday).");
+            throw new ArgumentOutOfRangeException(nameof(dayOfWeek), "DayOfWeek must be between 1 (Monday) and 7 (Sunday).");
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(startTime);
@@ -55,6 +55,38 @@ public sealed record WorkScheduleItem(
         string endTime,
         bool isActive = true) =>
         Create(null, clinicId, dayOfWeek, startTime, endTime, isActive);
+
+    /// <summary>
+    /// Converts a JavaScript DayOfWeek (0=Sunday, 1=Monday, ..., 6=Saturday)
+    /// to the internal 1-7 representation (1=Sunday, 2=Monday, ..., 7=Saturday).
+    /// </summary>
+    public static int NormalizeDayOfWeek(int jsDayOfWeek) => jsDayOfWeek switch
+    {
+        0 => 1, // Sunday
+        1 => 2, // Monday
+        2 => 3, // Tuesday
+        3 => 4, // Wednesday
+        4 => 5, // Thursday
+        5 => 6, // Friday
+        6 => 7, // Saturday
+        _ => throw new ArgumentOutOfRangeException(nameof(jsDayOfWeek), "JS DayOfWeek must be between 0 (Sunday) and 6 (Saturday).")
+    };
+
+    /// <summary>
+    /// Converts the internal 1-7 representation (1=Sunday, 2=Monday, ..., 7=Saturday)
+    /// to JavaScript DayOfWeek (0=Sunday, 1=Monday, ..., 6=Saturday).
+    /// </summary>
+    public static int ToJsDayOfWeek(int domainDayOfWeek) => domainDayOfWeek switch
+    {
+        1 => 0, // Sunday
+        2 => 1, // Monday
+        3 => 2, // Tuesday
+        4 => 3, // Wednesday
+        5 => 4, // Thursday
+        6 => 5, // Friday
+        7 => 6, // Saturday
+        _ => domainDayOfWeek - 1 // fallback
+    };
 
     public bool OverlapsWith(WorkScheduleItem other)
     {

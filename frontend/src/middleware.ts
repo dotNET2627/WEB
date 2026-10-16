@@ -50,6 +50,11 @@ export function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
+    // Chế độ phát triển (Development): Bỏ qua kiểm tra đăng nhập để test trực tiếp giao diện Patient Portal
+    if (process.env.NODE_ENV !== "production") {
+      return NextResponse.next();
+    }
+
     // Chưa có session mà vào trang bệnh nhân bảo vệ
     if (!hasSession && !isPatientPublic) {
       const patientLoginUrl = new URL("/portal/login", request.url);
@@ -110,6 +115,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|images|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };
 

@@ -11,14 +11,11 @@ public static class AuthCookieHelper
         DateTimeOffset expiresAt,
         bool rememberMe)
     {
-        var isLocal = context.Request.Host.Host is "localhost" or "127.0.0.1";
-        var secure = context.Request.IsHttps || !isLocal;
-
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = secure,
-            SameSite = SameSiteMode.Lax,
+            Secure = true,
+            SameSite = SameSiteMode.None,
             Path = CookiePath,
             Expires = rememberMe ? expiresAt : null
         };
@@ -28,14 +25,11 @@ public static class AuthCookieHelper
 
     public static void DeleteRefreshTokenCookie(HttpContext context)
     {
-        var isLocal = context.Request.Host.Host is "localhost" or "127.0.0.1";
-        var secure = context.Request.IsHttps || !isLocal;
-
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = secure,
-            SameSite = SameSiteMode.Lax,
+            Secure = true,
+            SameSite = SameSiteMode.None,
             Path = CookiePath,
             Expires = DateTimeOffset.UtcNow.AddDays(-1)
         };

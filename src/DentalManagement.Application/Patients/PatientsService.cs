@@ -9,7 +9,8 @@ namespace DentalManagement.Application.Patients;
 /// <summary>All patient use cases. Database operations remain in IPatientRepository.</summary>
 public sealed class PatientService(
     IPatientRepository patients,
-    IValidator<CreatePatientCommand> validator)
+    IValidator<CreatePatientCommand> validator,
+    IValidator<AddMedicalHistoryCommand> historyValidator)
 {
     public async Task<Result<Guid>> CreateAsync(CreatePatientCommand command, CancellationToken cancellationToken)
     {
@@ -83,6 +84,80 @@ public sealed class PatientService(
         return new PagedResult<PatientDto>(result.Items.Select(PatientDto.FromDomain).ToArray(),
             result.Page, result.PageSize, result.TotalCount);
     }
+
+    // ---- Tiền sử bệnh lý (medical history) ----
+
+    public async Task<Result<MedicalHistoryItemDto[]>> GetMedicalHistoryAsync(
+        GetMedicalHistoryQuery query, CancellationToken cancellationToken)
+    {
+        var patient = await patients.GetByIdAsync(query.ClinicId, query.PatientId, cancellationToken);
+        return patient is null
+            ? Result<MedicalHistoryItemDto[]>.Failure("patient.not_found", "Không tìm thấy bệnh nhân.")
+            : Result<MedicalHistoryItemDto[]>.Success(patient.MedicalHistory
+                .Select((item, index) => MedicalHistoryItemDto.FromDomain(index, item))
+                .ToArray());
+    }
+
+    public async Task<Result<MedicalHistoryItemDto>> AddMedicalHistoryAsync(
+        AddMedicalHistoryCommand command, CancellationToken cancellationToken)
+    {
+        var validation = await historyValidator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
+            return Result<MedicalHistoryItemDto>.Failure(
+                "patient.invalid", string.Join(" ", validation.Errors.Select(x => x.ErrorMessage)));
+
+        var patient = await patients.GetByIdAsync(command.ClinicId, command.PatientId, cancellationToken);
+        if (patient is null)
+            return Result<MedicalHistoryItemDto>.Failure("patient.not_found", "Không tìm thấy bệnh nhân.");
+
+        var item = new MedicalHistoryItem(
+            NormalizeToken(command.Type),
+            command.Name.Trim(),
+            string.IsNullOrWhiteSpace(command.Severity) ? null : NormalizeToken(command.Severity),
+            string.IsNullOrWhiteSpace(command.Note) ? null : command.Note.Trim(),
+            DateTimeOffset.UtcNow);
+
+        patient.AddMedicalHistory(item);
+        if (!await patients.UpdateMedicalHistoryAsync(patient, cancellationToken))
+            return Result<MedicalHistoryItemDto>.Failure("patient.not_found", "Không tìm thấy bệnh nhân.");
+
+        return Result<MedicalHistoryItemDto>.Success(
+            MedicalHistoryItemDto.FromDomain(patient.MedicalHistory.Count - 1, item));
+    }
+
+    public async Task<Result> RemoveMedicalHistoryAsync(
+        RemoveMedicalHistoryCommand command, CancellationToken cancellationToken)
+    {
+        if (command.Index < 0)
+            return Result.Failure("patient.invalid_index", "Chỉ số tiền sử bệnh lý không hợp lệ.");
+
+        const int maxAttempts = 3;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            var patient = await patients.GetByIdAsync(command.ClinicId, command.PatientId, cancellationToken);
+            if (patient is null)
+                return Result.Failure("patient.not_found", "Không tìm thấy bệnh nhân.");
+
+            try
+            {
+                patient.RemoveMedicalHistory(command.Index);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return Result.Failure("patient.invalid_index", "Chỉ số tiền sử bệnh lý không hợp lệ.");
+            }
+
+            if (await patients.UpdateMedicalHistoryAsync(patient, cancellationToken))
+                return Result.Success();
+
+            if (attempt == maxAttempts)
+                return Result.Failure("patient.not_found", "Không tìm thấy bệnh nhân hoặc xảy ra xung đột dữ liệu.");
+        }
+
+        return Result.Failure("patient.not_found", "Không tìm thấy bệnh nhân.");
+    }
+
+    private static string NormalizeToken(string value) => value.Trim().ToLowerInvariant();
 }
 
 // Input models for the operations above.
@@ -103,6 +178,18 @@ public sealed record GetPatientQuery(Guid ClinicId, Guid Id);
 
 public sealed record GetPatientsQuery(Guid ClinicId, int Page = 1, int PageSize = 20, string? Search = null);
 
+public sealed record GetMedicalHistoryQuery(Guid ClinicId, Guid PatientId);
+
+public sealed record AddMedicalHistoryCommand(
+    Guid ClinicId,
+    Guid PatientId,
+    string Type,
+    string Name,
+    string? Severity = null,
+    string? Note = null);
+
+public sealed record RemoveMedicalHistoryCommand(Guid ClinicId, Guid PatientId, int Index);
+
 // Shared validation for creating and updating a patient.
 public sealed class CreatePatientValidator : AbstractValidator<CreatePatientCommand>
 {
@@ -121,3 +208,20 @@ public sealed class CreatePatientValidator : AbstractValidator<CreatePatientComm
     }
 }
 
+// Validation for adding one medical history entry.
+public sealed class AddMedicalHistoryValidator : AbstractValidator<AddMedicalHistoryCommand>
+{
+    public AddMedicalHistoryValidator()
+    {
+        RuleFor(x => x.ClinicId).NotEmpty().WithMessage("Chưa chọn phòng khám.");
+        RuleFor(x => x.PatientId).NotEmpty().WithMessage("Chưa chọn bệnh nhân.");
+        RuleFor(x => x.Type)
+            .NotEmpty().WithMessage("Loại tiền sử bệnh lý là bắt buộc.")
+            .MaximumLength(100);
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Tên tiền sử bệnh lý là bắt buộc.")
+            .MaximumLength(200);
+        RuleFor(x => x.Severity).MaximumLength(50);
+        RuleFor(x => x.Note).MaximumLength(1000);
+    }
+}

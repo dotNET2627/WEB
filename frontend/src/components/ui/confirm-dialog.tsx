@@ -71,7 +71,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className="relative z-10 w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius)] shadow-[var(--shadow-overlay)] p-6 animate-in zoom-in-95 duration-150"
+        className="relative z-10 w-full max-w-md bg-white bg-[var(--color-surface)] border border-slate-200 border-[var(--color-border)] rounded-[var(--radius)] shadow-2xl p-6 animate-in zoom-in-95 duration-150"
       >
         <div className="flex items-start gap-3.5">
           <div

@@ -85,6 +85,10 @@ public sealed class MongoDoctorRepository : IDoctorRepository
         string? searchTerm,
         CancellationToken cancellationToken)
     {
+        // Handle invalid page numbers
+        if (page <= 0) page = 1;
+        if (pageSize <= 0) pageSize = 20;
+
         var builder = Builders<DoctorDocument>.Filter;
         var filter = builder.Empty;
 

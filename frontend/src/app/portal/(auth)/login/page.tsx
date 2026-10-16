@@ -342,7 +342,7 @@ function PatientLoginForm() {
           {/* Left Footer Info */}
           <div className="relative z-10 flex items-center justify-between text-xs text-indigo-300 border-t border-white/10 pt-4">
             <span>Bảo mật y tế cá nhân</span>
-            <span>Hỗ trợ 24/7</span>
+            <span>Hỗ trợ giờ làm việc</span>
           </div>
 
         </div>
@@ -417,6 +417,30 @@ function PatientLoginForm() {
             {/* STEP 1: PHONE OR GOOGLE LOGIN */}
             {step === "phone" && (
               <div className="space-y-4">
+                {/* DEV MODE DIRECT ACCESS BANNER */}
+                {process.env.NODE_ENV !== "production" && (
+                  <div className="rounded-2xl border border-amber-300 bg-amber-50/90 p-3.5 text-xs text-amber-900 shadow-sm">
+                    <div className="flex items-center justify-between mb-1.5 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <span className="flex h-2 w-2 rounded-full bg-amber-500" />
+                        Chế độ Kiểm thử (Dev Mode)
+                      </span>
+                      <span className="text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded text-amber-900 font-mono">
+                        Bypass Login
+                      </span>
+                    </div>
+                    <p className="text-amber-800 text-[11px] mb-2 leading-relaxed">
+                      Đăng nhập đã được vô hiệu hóa để bạn kiểm thử trực tiếp toàn bộ giao diện sổ khám bệnh.
+                    </p>
+                    <Link
+                      href="/portal/dashboard"
+                      className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow transition active:scale-[0.98]"
+                    >
+                      <span>Vào thẳng Sổ Khám Bệnh (Dashboard)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                )}
                 
                 {/* 1. GOOGLE LOGIN BUTTON */}
                 <button

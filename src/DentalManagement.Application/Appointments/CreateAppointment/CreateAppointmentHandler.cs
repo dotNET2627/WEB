@@ -23,21 +23,6 @@ public sealed class CreateAppointmentHandler
         CreateAppointmentCommand command,
         CancellationToken cancellationToken)
     {
-        // Guard: check for scheduling conflicts with the same doctor
-        bool conflict = await _appointments.HasDoctorConflictAsync(
-            command.DoctorId,
-            command.StartsAt,
-            command.EndsAt,
-            excludingAppointmentId: null,
-            cancellationToken);
-
-        if (conflict)
-        {
-            return Result<Guid>.Failure(
-                "appointment.conflict",
-                "Bác sĩ đã có lịch hẹn trong khoảng thời gian này.");
-        }
-
         var domainServices = command.PlannedServices
             .Select(s => new PlannedService(s.ServiceId, s.ServiceName, s.UnitPrice, s.ToothNumber))
             .ToList();
@@ -52,9 +37,33 @@ public sealed class CreateAppointmentHandler
             command.Reason,
             domainServices);
 
-        await _transactionRunner.RunAsync(
-            async () => await _appointments.AddAsync(appointment, cancellationToken),
-            cancellationToken);
+        Result<Guid>? failureResult = null;
+
+        await _transactionRunner.ExecuteAsync(async ct =>
+        {
+            // Guard: check for scheduling conflicts within the transaction session to prevent race conditions
+            bool conflict = await _appointments.HasDoctorConflictAsync(
+                command.DoctorId,
+                command.StartsAt,
+                command.EndsAt,
+                excludingAppointmentId: null,
+                ct);
+
+            if (conflict)
+            {
+                failureResult = Result<Guid>.Failure(
+                    "appointment.conflict",
+                    "Bác sĩ đã có lịch hẹn trong khoảng thời gian này.");
+                return;
+            }
+
+            await _appointments.AddAsync(appointment, ct);
+        }, cancellationToken);
+
+        if (failureResult is not null)
+        {
+            return failureResult;
+        }
 
         return Result<Guid>.Success(appointment.Id);
     }

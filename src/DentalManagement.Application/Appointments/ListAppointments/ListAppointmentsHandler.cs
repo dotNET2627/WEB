@@ -22,6 +22,7 @@ public sealed class ListAppointmentsHandler
             query.From,
             query.To,
             query.DoctorId,
+            query.ClinicId,
             cancellationToken);
 
         var dtos = appointments

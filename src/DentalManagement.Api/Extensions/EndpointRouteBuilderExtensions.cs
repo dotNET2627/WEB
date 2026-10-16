@@ -14,7 +14,11 @@ public static class EndpointRouteBuilderExtensions
         }));
 
         endpoints.MapAuthEndpoints();
+        endpoints.MapDoctorEndpoints();
+        endpoints.MapClinicEndpoints();
         endpoints.MapAppointmentEndpoints();
+        endpoints.MapPatientEndpoints();
+        endpoints.MapMedicalImageEndpoints();
 
         // Demonstration of Dynamic Permission Policy
         api.MapGet("/patients-demo", () => Results.Ok(new[]

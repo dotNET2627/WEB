@@ -9,6 +9,14 @@ public interface IAppointmentRepository
         DateTimeOffset from,
         DateTimeOffset to,
         Guid? doctorId,
+        CancellationToken cancellationToken) =>
+        GetByDateRangeAsync(from, to, doctorId, null, cancellationToken);
+
+    Task<IReadOnlyList<Appointment>> GetByDateRangeAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        Guid? doctorId,
+        Guid? clinicId,
         CancellationToken cancellationToken);
     Task<bool> HasDoctorConflictAsync(
         Guid doctorId,

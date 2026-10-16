@@ -27,12 +27,33 @@ public static class ServiceCollectionExtensions
 
         // Feature Handlers
         services.AddScoped<PatientService>();
+        services.AddScoped<MedicalImages.MedicalImageService>();
+        services.AddScoped<IQueryHandler<Patients.Odontogram.GetOdontogramQuery, Result<IReadOnlyList<Patients.ToothConditionDto>>>, Patients.Odontogram.GetOdontogramHandler>();
+        services.AddScoped<ICommandHandler<Patients.Odontogram.UpdateToothConditionCommand, Result<Patients.ToothConditionDto>>, Patients.Odontogram.UpdateToothConditionCommandHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CreateAppointment.CreateAppointmentCommand, Result<Guid>>, DentalManagement.Application.Appointments.CreateAppointment.CreateAppointmentHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.UpdateAppointment.UpdateAppointmentCommand, Result>, DentalManagement.Application.Appointments.UpdateAppointment.UpdateAppointmentHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.ConfirmAppointment.ConfirmAppointmentCommand, Result>, DentalManagement.Application.Appointments.ConfirmAppointment.ConfirmAppointmentHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CancelAppointment.CancelAppointmentCommand, Result>, DentalManagement.Application.Appointments.CancelAppointment.CancelAppointmentHandler>();
         services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.GetAppointment.GetAppointmentQuery, Result<DentalManagement.Application.Appointments.GetAppointment.AppointmentDto>>, DentalManagement.Application.Appointments.GetAppointment.GetAppointmentHandler>();
         services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.ListAppointments.ListAppointmentsQuery, Result<IReadOnlyList<DentalManagement.Application.Appointments.ListAppointments.AppointmentSummaryDto>>>, DentalManagement.Application.Appointments.ListAppointments.ListAppointmentsHandler>();
+
+        // Doctor Handlers
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Doctors.Queries.GetDoctors.GetDoctorsQuery, Result<DentalManagement.Application.Common.PagedResult<DentalManagement.Application.Doctors.Dtos.DoctorDto>>>, DentalManagement.Application.Doctors.Queries.GetDoctors.GetDoctorsQueryHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Doctors.Queries.GetDoctorById.GetDoctorByIdQuery, Result<DentalManagement.Application.Doctors.Dtos.DoctorDto>>, DentalManagement.Application.Doctors.Queries.GetDoctorById.GetDoctorByIdQueryHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Doctors.Commands.CreateDoctor.CreateDoctorCommand, Result<DentalManagement.Application.Doctors.Dtos.DoctorDto>>, DentalManagement.Application.Doctors.Commands.CreateDoctor.CreateDoctorCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Doctors.Commands.UpdateDoctor.UpdateDoctorCommand, Result<DentalManagement.Application.Doctors.Dtos.DoctorDto>>, DentalManagement.Application.Doctors.Commands.UpdateDoctor.UpdateDoctorCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Doctors.Commands.DeleteDoctor.DeleteDoctorCommand, Result>, DentalManagement.Application.Doctors.Commands.DeleteDoctor.DeleteDoctorCommandHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Doctors.Queries.GetDoctorWorkSchedules.GetDoctorWorkSchedulesQuery, Result<IReadOnlyList<DentalManagement.Application.Doctors.Dtos.WorkScheduleDto>>>, DentalManagement.Application.Doctors.Queries.GetDoctorWorkSchedules.GetDoctorWorkSchedulesQueryHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Doctors.Commands.AssignWorkSchedule.AssignWorkScheduleCommand, Result<DentalManagement.Application.Doctors.Dtos.WorkScheduleDto>>, DentalManagement.Application.Doctors.Commands.AssignWorkSchedule.AssignWorkScheduleCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.SetDoctorWorkSchedulesCommand, Result<IReadOnlyList<DentalManagement.Application.Doctors.Dtos.WorkScheduleDto>>>, DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.SetDoctorWorkSchedulesCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Doctors.Commands.RemoveWorkSchedule.RemoveWorkScheduleCommand, Result>, DentalManagement.Application.Doctors.Commands.RemoveWorkSchedule.RemoveWorkScheduleCommandHandler>();
+
+        // Clinic Handlers
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Clinics.Queries.GetClinics.GetClinicsQuery, Result<DentalManagement.Application.Common.PagedResult<DentalManagement.Application.Clinics.Dtos.ClinicDto>>>, DentalManagement.Application.Clinics.Queries.GetClinics.GetClinicsQueryHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Clinics.Queries.GetClinicById.GetClinicByIdQuery, Result<DentalManagement.Application.Clinics.Dtos.ClinicDto>>, DentalManagement.Application.Clinics.Queries.GetClinicById.GetClinicByIdQueryHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Clinics.Commands.CreateClinic.CreateClinicCommand, Result<DentalManagement.Application.Clinics.Dtos.ClinicDto>>, DentalManagement.Application.Clinics.Commands.CreateClinic.CreateClinicCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Clinics.Commands.UpdateClinic.UpdateClinicCommand, Result<DentalManagement.Application.Clinics.Dtos.ClinicDto>>, DentalManagement.Application.Clinics.Commands.UpdateClinic.UpdateClinicCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Clinics.Commands.DeleteClinic.DeleteClinicCommand, Result>, DentalManagement.Application.Clinics.Commands.DeleteClinic.DeleteClinicCommandHandler>();
 
         return services;
     }

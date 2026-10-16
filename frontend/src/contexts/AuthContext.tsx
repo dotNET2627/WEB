@@ -125,6 +125,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSessionCookies(profile);
           scheduleSilentRefresh(15 * 60);
         } else {
+          // Chế độ phát triển (Dev Mode): Tự động gán Bệnh nhân kiểm thử khi truy cập Cổng Bệnh nhân (/portal)
+          if (process.env.NODE_ENV !== "production") {
+            const isPortal = typeof window !== "undefined" && window.location.pathname.startsWith("/portal");
+            if (isPortal) {
+              const devPatient: User = {
+                id: "bn-test-001",
+                email: "benhnhan.test@dentalcare.vn",
+                fullName: "Bệnh nhân Kiểm thử",
+                phoneNumber: "0900 000 001",
+                patientCode: "BN-2026-8888",
+                activeClinicId: null,
+                roles: ["Patient"],
+                permissions: ["patient.read_records", "patient.book_appointment"],
+                assignedClinicIds: []
+              };
+              setUser(devPatient);
+              return;
+            }
+          }
+
           // Kiểm tra session cookie của bệnh nhân
           const hasAuthSession = typeof document !== "undefined" && document.cookie.includes("auth_session=1");
           const isPatientRole = typeof document !== "undefined" && document.cookie.includes("auth_role=patient");

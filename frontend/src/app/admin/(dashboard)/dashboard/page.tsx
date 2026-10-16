@@ -1,5 +1,19 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from "recharts";
 
 const systemStats = [
   {
@@ -39,10 +53,10 @@ const systemStats = [
     ),
   },
   {
-    label: "An toàn & Phiên đăng nhập",
-    value: "99.98%",
-    detail: "0 vi phạm, 126 phiên hoạt động",
-    change: "Bảo mật cấp cao",
+    label: "Trạng thái Phiên đăng nhập",
+    value: "Hoạt động bình thường",
+    detail: "0 sự cố, 126 phiên hoạt động",
+    change: "Kiểm soát an toàn",
     badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30",
     icon: (
       <svg className="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -51,6 +65,27 @@ const systemStats = [
     ),
   },
 ];
+
+const BRANCH_PERFORMANCE_DATA = [
+  { branch: "CN Quận 1", revenue: 485000000, appointments: 840 },
+  { branch: "CN Cầu Giấy", revenue: 420000000, appointments: 720 },
+  { branch: "CN Đà Nẵng", revenue: 310000000, appointments: 560 },
+  { branch: "CN Thủ Đức", revenue: 260000000, appointments: 490 },
+  { branch: "CN Hải Phòng", revenue: 215000000, appointments: 380 }
+];
+
+const MONTHLY_GROWTH_DATA = [
+  { month: "T5/26", revenue: 1350000000, appointments: 2450 },
+  { month: "T6/26", revenue: 1480000000, appointments: 2680 },
+  { month: "T7/26", revenue: 1520000000, appointments: 2790 },
+  { month: "T8/26", revenue: 1610000000, appointments: 2940 },
+  { month: "T9/26", revenue: 1720000000, appointments: 3120 },
+  { month: "T10/26", revenue: 1890000000, appointments: 3410 }
+];
+
+function formatMillionVND(val: number) {
+  return `${(val / 1_000_000).toLocaleString("vi-VN")} tr`;
+}
 
 const recentOperations = [
   {
@@ -125,9 +160,9 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Tổng quan Hệ thống Quản trị</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Tổng quan Hệ thống Quản trị Toàn chuỗi</h1>
             <span className="rounded-md border border-indigo-500/30 bg-indigo-950/70 px-2 py-0.5 text-xs font-semibold text-indigo-300">
-              Toàn hệ thống
+              SuperAdmin Portal
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-400">
@@ -176,6 +211,77 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Biểu đồ Recharts So sánh Chi nhánh & Tăng trưởng Toàn chuỗi */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Biểu đồ So sánh Doanh thu giữa các Chi nhánh */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-lg">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+            <div>
+              <h2 className="text-base font-semibold text-white">So sánh Doanh thu giữa các Chi nhánh</h2>
+              <p className="text-xs text-slate-400">Tổng kết doanh thu tháng hiện tại</p>
+            </div>
+            <span className="text-xs font-medium text-indigo-400 bg-indigo-950/60 border border-indigo-500/30 px-2.5 py-1 rounded-lg">
+              Top 5 Cơ sở
+            </span>
+          </div>
+
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={BRANCH_PERFORMANCE_DATA} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1E293B" />
+                <XAxis dataKey="branch" tick={{ fontSize: 12, fill: "#94A3B8" }} tickLine={false} />
+                <YAxis
+                  tickFormatter={formatMillionVND}
+                  tick={{ fontSize: 12, fill: "#94A3B8" }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  formatter={(val: unknown) => [`${Number(val).toLocaleString("vi-VN")} ₫`, "Doanh thu"]}
+                  contentStyle={{ backgroundColor: "#0F172A", borderRadius: 8, borderColor: "#334155", color: "#F8FAFC" }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                <Bar dataKey="revenue" name="Doanh thu thực tế (VNĐ)" fill="#6366F1" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Biểu đồ Tăng trưởng Doanh thu & Lượt khám 6 tháng */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-lg">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+            <div>
+              <h2 className="text-base font-semibold text-white">Tăng trưởng Toàn Chuỗi (6 Tháng)</h2>
+              <p className="text-xs text-slate-400">Tốc độ mở rộng và tỷ lệ chuyển đổi dịch vụ</p>
+            </div>
+            <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
+              +14.2% / tháng
+            </span>
+          </div>
+
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={MONTHLY_GROWTH_DATA} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1E293B" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94A3B8" }} tickLine={false} />
+                <YAxis
+                  tickFormatter={formatMillionVND}
+                  tick={{ fontSize: 12, fill: "#94A3B8" }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  formatter={(val: unknown) => [`${Number(val).toLocaleString("vi-VN")} ₫`, "Doanh thu"]}
+                  contentStyle={{ backgroundColor: "#0F172A", borderRadius: 8, borderColor: "#334155", color: "#F8FAFC" }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                <Line type="monotone" dataKey="revenue" name="Tổng doanh thu" stroke="#38BDF8" strokeWidth={2.5} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* Two Column Layout: Operations Stream & Security Alerts */}
@@ -240,31 +346,10 @@ export default function AdminDashboardPage() {
                     </span>
                     <span className="text-[11px] text-slate-500">{alert.time}</span>
                   </div>
-                  <h3 className="text-xs font-semibold text-slate-200">{alert.title}</h3>
-                  <p className="mt-1 text-xs text-slate-400 leading-relaxed">{alert.description}</p>
+                  <h3 className="text-sm font-semibold text-slate-200">{alert.title}</h3>
+                  <p className="mt-1 text-xs text-slate-400">{alert.description}</p>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Infrastructure Health Status */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Trạng thái Hạ tầng Máy chủ
-            </h3>
-            <div className="space-y-2.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">ASP.NET Core 9 API Gateway</span>
-                <span className="text-emerald-400 font-medium">Bình thường (14ms)</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">MongoDB ReplicaSet (Primary)</span>
-                <span className="text-emerald-400 font-medium">Kết nối tốt</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Auth Token Rotation Service</span>
-                <span className="text-emerald-400 font-medium">Hoạt động</span>
-              </div>
             </div>
           </div>
         </div>

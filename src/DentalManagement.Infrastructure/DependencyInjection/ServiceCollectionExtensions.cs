@@ -8,6 +8,8 @@ using DentalManagement.Infrastructure.Storage;
 using DentalManagement.Infrastructure.Transactions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace DentalManagement.Infrastructure.DependencyInjection;
 
@@ -24,6 +26,9 @@ public static class ServiceCollectionExtensions
 
         services.AddOptions<DentalManagement.Infrastructure.Security.JwtOptions>()
             .BindConfiguration(DentalManagement.Infrastructure.Security.JwtOptions.SectionName);
+
+        services.AddOptions<FileStorageOptions>()
+            .BindConfiguration(FileStorageOptions.SectionName);
 
         services.AddSingleton<MongoDatabaseContext>();
         services.AddSingleton<MongoSessionAccessor>();
@@ -53,11 +58,19 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRefreshTokenRepository, MongoRefreshTokenRepository>();
 
         services.AddScoped<IPatientRepository, MongoPatientRepository>();
+        services.AddScoped<IMedicalImageRepository, MongoMedicalImageRepository>();
         services.AddScoped<IClinicRepository, MongoClinicRepository>();
         services.AddScoped<IDoctorRepository, MongoDoctorRepository>();
         services.AddScoped<IAppointmentRepository, MongoAppointmentRepository>();
         services.AddScoped<ITransactionRunner, MongoTransactionRunner>();
-        services.AddScoped<IFileStorage, NotConfiguredFileStorage>();
+
+        // Local disk file storage for medical images (Storage:RootPath, default storage/medical-images).
+        services.AddSingleton<IFileStorage>(serviceProvider =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<FileStorageOptions>>().Value;
+            var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
+            return new LocalFileStorage(FileStorageOptions.ResolveRootPath(options.RootPath, environment.ContentRootPath));
+        });
 
         return services;
     }

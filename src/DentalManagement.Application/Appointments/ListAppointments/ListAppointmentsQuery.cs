@@ -1,6 +1,7 @@
 namespace DentalManagement.Application.Appointments.ListAppointments;
 
 public sealed record ListAppointmentsQuery(
+    Guid ClinicId,
     DateTimeOffset From,
     DateTimeOffset To,
     Guid? DoctorId);

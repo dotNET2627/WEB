@@ -4,19 +4,27 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { AppointmentCalendar } from "./AppointmentCalendar";
 import { AppointmentDetailModal } from "./AppointmentDetailModal";
 import { appointmentService } from "@/services/appointment-service";
+import { doctorService } from "@/services/doctor-service";
+import { useToast } from "@/components/ui/toast";
 import type { AppointmentListItem } from "@/types/appointment";
-
-// Mock doctors list – replace with a real /api/v1/doctors endpoint when available
-const MOCK_DOCTORS = [
-  { id: "", name: "Tất cả bác sĩ" },
-];
+import type { Doctor } from "@/types/doctor";
 
 export function AppointmentsView() {
+  const { showToast } = useToast();
   const [appointments, setAppointments] = useState<AppointmentListItem[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentListItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Load doctors for filter dropdown
+  useEffect(() => {
+    doctorService
+      .getDoctors({ pageSize: 50 })
+      .then((res) => setDoctors(res.items))
+      .catch(() => {});
+  }, []);
 
   // Keep current date range so we can re-fetch after reschedule
   const rangeRef = useRef<{ from: Date; to: Date } | null>(null);
@@ -64,17 +72,19 @@ export function AppointmentsView() {
           startsAt: startsAt.toISOString(),
           endsAt: endsAt?.toISOString() ?? null,
         });
-        // Optimistic update already applied by FullCalendar; also refresh from server
+        showToast("Đã cập nhật lại giờ hẹn khám thành công.", "success");
+        // Refresh from server
         if (rangeRef.current) {
           void fetchAppointments(rangeRef.current.from, rangeRef.current.to, selectedDoctorId);
         }
         return true;
-      } catch (err) {
-        console.error("Reschedule failed", err);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Không thể đổi lịch hẹn do trùng lịch hoặc lỗi máy chủ.";
+        showToast(msg, "error");
         return false; // triggers revert in AppointmentCalendar
       }
     },
-    [fetchAppointments, selectedDoctorId]
+    [fetchAppointments, selectedDoctorId, showToast]
   );
 
   return (
@@ -99,9 +109,10 @@ export function AppointmentsView() {
             onChange={(e) => setSelectedDoctorId(e.target.value)}
             className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
           >
-            {MOCK_DOCTORS.map((d) => (
+            <option value="">Tất cả bác sĩ</option>
+            {doctors.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.name}
+                {d.doctorName || d.medicalLicenseNumber || `Bác sĩ ${d.id.slice(0, 6)}`}
               </option>
             ))}
           </select>

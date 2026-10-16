@@ -26,6 +26,15 @@ public sealed class MongoIndexInitializer
                 }),
             cancellationToken: cancellationToken);
 
+        await _context.MedicalImages.Indexes.CreateOneAsync(
+            new CreateIndexModel<MedicalImageDocument>(
+                Builders<MedicalImageDocument>.IndexKeys
+                    .Ascending(document => document.ClinicId)
+                    .Ascending(document => document.PatientId)
+                    .Descending(document => document.CreatedAt),
+                new CreateIndexOptions { Name = "ix_medical_images_clinic_patient_created" }),
+            cancellationToken: cancellationToken);
+
         await _context.Appointments.Indexes.CreateOneAsync(
             new CreateIndexModel<AppointmentDocument>(
                 Builders<AppointmentDocument>.IndexKeys.Ascending(document => document.ClinicId).Ascending(document => document.DoctorId).Ascending(document => document.StartsAt),

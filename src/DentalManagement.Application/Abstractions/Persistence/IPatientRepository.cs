@@ -12,5 +12,7 @@ public interface IPatientRepository
     Task<Patient?> GetByIdAsync(Guid clinicId, Guid id, CancellationToken cancellationToken);
     Task<PagedResult<Patient>> GetPageAsync(Guid clinicId, PagedQuery paging, string? search, CancellationToken cancellationToken);
     Task<bool> UpdateProfileAsync(Patient patient, CancellationToken cancellationToken);
+    Task<bool> UpdateMedicalHistoryAsync(Patient patient, CancellationToken cancellationToken);
+    Task<bool> UpdateOdontogramAsync(Patient patient, CancellationToken cancellationToken);
     Task<bool> SoftDeleteAsync(Guid clinicId, Guid id, CancellationToken cancellationToken);
 }

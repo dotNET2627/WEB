@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <rect width="500" height="500" fill="#0B1320" />
+  <!-- Bone trabecular texture -->
+  <circle cx="250" cy="250" r="220" fill="#131F33" opacity="0.6" />
+  
+  <!-- Tooth Crown -->
+  <path d="M 180 120 C 180 80, 320 80, 320 120 L 310 220 L 190 220 Z" fill="#E2E8F0" opacity="0.9" stroke="#94A3B8" stroke-width="2" />
+  
+  <!-- Pulp chamber and root canals -->
+  <path d="M 230 140 L 270 140 L 280 210 L 290 380 L 280 385 L 270 210 L 250 170 L 230 210 L 220 385 L 210 380 L 220 210 Z" fill="#475569" />
+
+  <!-- Filling or Gutta-percha in canals -->
+  <line x1="215" y1="240" x2="215" y2="380" stroke="#F8FAFC" stroke-width="4" stroke-linecap="round" />
+  <line x1="285" y1="240" x2="285" y2="380" stroke="#F8FAFC" stroke-width="4" stroke-linecap="round" />
+
+  <!-- Root 1 and Root 2 -->
+  <path d="M 190 220 C 190 280, 200 370, 215 390 C 225 370, 240 280, 250 220 Z" fill="#CBD5E1" opacity="0.8" stroke="#94A3B8" stroke-width="1.5" />
+  <path d="M 250 220 C 260 280, 275 370, 285 390 C 300 370, 310 280, 310 220 Z" fill="#CBD5E1" opacity="0.8" stroke="#94A3B8" stroke-width="1.5" />
+
+  <!-- Periodontal ligament space (thin line) -->
+  <path d="M 185 220 C 185 285, 195 380, 215 396" fill="none" stroke="#334155" stroke-width="2" />
+  <path d="M 315 220 C 315 285, 305 380, 285 396" fill="none" stroke="#334155" stroke-width="2" />
+
+  <!-- Labels -->
+  <text x="25" y="35" fill="#94A3B8" font-family="monospace" font-size="13" font-weight="bold">PERIAPICAL X-RAY (CHÓP RĂNG)</text>
+  <text x="25" y="55" fill="#64748B" font-family="sans-serif" font-size="11">RĂNG: 16 • KIỂM TRA CHÓP RĂNG & DÂY CHẰNG NHA CHU</text>
+  <text x="400" y="475" fill="#64748B" font-family="monospace" font-size="11">ISO 100 0.08s</text>
+</svg>

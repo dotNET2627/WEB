@@ -17,8 +17,8 @@ export function PatientHeader() {
     }
   };
 
-  const displayName = user?.fullName || "Bệnh nhân";
-  const displayPhone = user?.phoneNumber || user?.email?.split("@")[0] || "";
+  const displayName = user?.fullName || "Bệnh nhân Kiểm thử";
+  const displayPhone = user?.phoneNumber || user?.email?.split("@")[0] || "0900 000 001";
   const displayCode = user?.patientCode || "BN-2026-8888";
 
   return (

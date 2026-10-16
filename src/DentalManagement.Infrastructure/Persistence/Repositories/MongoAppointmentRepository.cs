@@ -26,10 +26,18 @@ public sealed class MongoAppointmentRepository : IAppointmentRepository
         return document is null ? null : AppointmentDocumentMapper.ToDomain(document);
     }
 
+    public Task<IReadOnlyList<Appointment>> GetByDateRangeAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        Guid? doctorId,
+        CancellationToken cancellationToken) =>
+        GetByDateRangeAsync(from, to, doctorId, null, cancellationToken);
+
     public async Task<IReadOnlyList<Appointment>> GetByDateRangeAsync(
         DateTimeOffset from,
         DateTimeOffset to,
         Guid? doctorId,
+        Guid? clinicId,
         CancellationToken cancellationToken)
     {
         var builder = Builders<AppointmentDocument>.Filter;
@@ -43,6 +51,9 @@ public sealed class MongoAppointmentRepository : IAppointmentRepository
 
         if (doctorId is not null)
             filter &= builder.Eq(d => d.DoctorId, doctorId.Value);
+
+        if (clinicId is not null)
+            filter &= builder.Eq(d => d.ClinicId, clinicId.Value);
 
         var documents = _sessionAccessor.Current is { } session
             ? await _context.Appointments.Find(session, filter).ToListAsync(cancellationToken)
