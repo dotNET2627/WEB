@@ -23,6 +23,7 @@ public static class EndpointRouteBuilderExtensions
 
         endpoints.MapAuthEndpoints();
         endpoints.MapServiceEndpoints();
+        endpoints.MapPromotionEndpoints();
 
         // Demonstration of Dynamic Permission Policy
         api.MapGet("/patients-demo", () => Results.Ok(new[]
