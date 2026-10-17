@@ -1,23 +1,20 @@
-using DentalManagement.Application.Common;
-using DentalManagement.Application.Doctors.Commands.CreateDoctor;
-using DentalManagement.Application.Doctors.Commands.DeleteDoctor;
-using DentalManagement.Application.Doctors.Commands.UpdateDoctor;
-using DentalManagement.Application.Doctors.Dtos;
-using DentalManagement.Application.Doctors.Queries.GetDoctorById;
-using DentalManagement.Application.Doctors.Queries.GetDoctors;
+using DentalManagement.Application.Doctors;
+using DentalManagement.Application.DoctorsDTO;
 using DentalManagement.Application.Security;
 using DentalManagement.Domain.Common;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DentalManagement.Api.Endpoints;
 
 public static class DoctorEndpoints
 {
-    public static IEndpointRouteBuilder MapDoctorEndpoints(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapDoctorEndpoints(
+        this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/v1/doctors")
             .WithTags("Doctors");
 
-        // 1. Get List of Doctors
+        // 1. Danh sách bác sĩ.
         group.MapGet("/", async (
             int? page,
             int? pageSize,
@@ -25,44 +22,45 @@ public static class DoctorEndpoints
             string? specialty,
             string? search,
             string? searchTerm,
-            IQueryHandler<GetDoctorsQuery, Result<PagedResult<DoctorDto>>> handler,
+            [FromServices] DoctorService service,
             CancellationToken cancellationToken) =>
         {
-            var effectiveSearch = search ?? searchTerm;
-            var effectiveClinicId = clinicId == Guid.Empty ? null : clinicId;
-            var query = new GetDoctorsQuery(
+            var result = await service.GetDoctorsAsync(
                 page ?? 1,
                 pageSize ?? 20,
-                effectiveClinicId,
+                clinicId == Guid.Empty ? null : clinicId,
                 specialty,
-                effectiveSearch);
+                search ?? searchTerm,
+                cancellationToken);
 
-            var result = await handler.Handle(query, cancellationToken);
             return result.IsSuccess
                 ? Results.Ok(result.Value)
-                : Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: "Lỗi lấy danh sách", detail: result.Error!.Message);
+                : ToProblem(result.Error!);
         })
         .WithName("GetDoctors")
         .RequireAuthorization(DefaultPermissions.Doctors.Read);
 
-        // 2. Get Doctor by ID
+        // 2. Chi tiết bác sĩ.
         group.MapGet("/{id:guid}", async (
             Guid id,
-            IQueryHandler<GetDoctorByIdQuery, Result<DoctorDto>> handler,
+            [FromServices] DoctorService service,
             CancellationToken cancellationToken) =>
         {
-            var result = await handler.Handle(new GetDoctorByIdQuery(id), cancellationToken);
+            var result = await service.GetByIdAsync(
+                id,
+                cancellationToken);
+
             return result.IsSuccess
                 ? Results.Ok(result.Value)
-                : Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "Không tìm thấy bác sĩ", detail: result.Error!.Message);
+                : ToProblem(result.Error!);
         })
         .WithName("GetDoctorById")
         .RequireAuthorization(DefaultPermissions.Doctors.Read);
 
-        // 3. Create Doctor Profile
+        // 3. Tạo hồ sơ bác sĩ.
         group.MapPost("/", async (
             CreateDoctorRequest request,
-            ICommandHandler<CreateDoctorCommand, Result<DoctorDto>> handler,
+            [FromServices] DoctorService service,
             CancellationToken cancellationToken) =>
         {
             var command = new CreateDoctorCommand(
@@ -74,46 +72,24 @@ public static class DoctorEndpoints
                 request.Biography,
                 request.WorkSchedules);
 
-            var result = await handler.Handle(command, cancellationToken);
+            var result = await service.CreateAsync(
+                command,
+                cancellationToken);
 
-            if (result.IsFailure)
-            {
-                var error = result.Error!;
-                return error.Code switch
-                {
-                    "doctor.user_not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy người dùng",
-                        detail: error.Message),
-                    "doctor.clinic_not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy phòng khám",
-                        detail: error.Message),
-                    "doctor.user_already_has_profile" => Results.Problem(
-                        statusCode: StatusCodes.Status409Conflict,
-                        title: "Hồ sơ bác sĩ đã tồn tại",
-                        detail: error.Message),
-                    "doctor.duplicate_license" => Results.Problem(
-                        statusCode: StatusCodes.Status409Conflict,
-                        title: "Trùng số chứng chỉ hành nghề",
-                        detail: error.Message),
-                    _ => Results.Problem(
-                        statusCode: StatusCodes.Status400BadRequest,
-                        title: "Tạo hồ sơ bác sĩ thất bại",
-                        detail: error.Message)
-                };
-            }
-
-            return Results.Created($"/api/v1/doctors/{result.Value!.Id}", result.Value);
+            return result.IsSuccess
+                ? Results.Created(
+                    $"/api/v1/doctors/{result.Value!.Id}",
+                    result.Value)
+                : ToProblem(result.Error!);
         })
         .WithName("CreateDoctor")
         .RequireAuthorization(DefaultPermissions.Doctors.Create);
 
-        // 4. Update Doctor Profile
+        // 4. Cập nhật hồ sơ bác sĩ.
         group.MapPut("/{id:guid}", async (
             Guid id,
             UpdateDoctorRequest request,
-            ICommandHandler<UpdateDoctorCommand, Result<DoctorDto>> handler,
+            [FromServices] DoctorService service,
             CancellationToken cancellationToken) =>
         {
             var command = new UpdateDoctorCommand(
@@ -125,204 +101,182 @@ public static class DoctorEndpoints
                 request.Biography,
                 request.WorkSchedules);
 
-            var result = await handler.Handle(command, cancellationToken);
+            var result = await service.UpdateAsync(
+                command,
+                cancellationToken);
 
-            if (result.IsFailure)
-            {
-                var error = result.Error!;
-                return error.Code switch
-                {
-                    "doctor.not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy bác sĩ",
-                        detail: error.Message),
-                    "doctor.clinic_not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy phòng khám",
-                        detail: error.Message),
-                    "doctor.duplicate_license" => Results.Problem(
-                        statusCode: StatusCodes.Status409Conflict,
-                        title: "Trùng số chứng chỉ hành nghề",
-                        detail: error.Message),
-                    _ => Results.Problem(
-                        statusCode: StatusCodes.Status400BadRequest,
-                        title: "Cập nhật hồ sơ bác sĩ thất bại",
-                        detail: error.Message)
-                };
-            }
-
-            return Results.Ok(result.Value);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : ToProblem(result.Error!);
         })
         .WithName("UpdateDoctor")
         .RequireAuthorization(DefaultPermissions.Doctors.Update);
 
-        // 5. Delete Doctor Profile
+        // 5. Xóa hồ sơ bác sĩ.
         group.MapDelete("/{id:guid}", async (
             Guid id,
-            ICommandHandler<DeleteDoctorCommand, Result> handler,
+            [FromServices] DoctorService service,
             CancellationToken cancellationToken) =>
         {
-            var result = await handler.Handle(new DeleteDoctorCommand(id), cancellationToken);
+            var result = await service.DeleteAsync(
+                id,
+                cancellationToken);
 
-            if (result.IsFailure)
-            {
-                var error = result.Error!;
-                return error.Code switch
+            return result.IsSuccess
+                ? Results.Ok(new
                 {
-                    "doctor.not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy bác sĩ",
-                        detail: error.Message),
-                    _ => Results.Problem(
-                        statusCode: StatusCodes.Status400BadRequest,
-                        title: "Xóa hồ sơ bác sĩ thất bại",
-                        detail: error.Message)
-                };
-            }
-
-            return Results.Ok(new { message = "Đã xóa hồ sơ bác sĩ thành công." });
+                    message = "Đã xóa hồ sơ bác sĩ thành công."
+                })
+                : ToProblem(result.Error!);
         })
         .WithName("DeleteDoctor")
         .RequireAuthorization(DefaultPermissions.Doctors.Delete);
 
-        // 6. Get Doctor Schedules
+        // 6. Lấy lịch làm việc.
         group.MapGet("/{id:guid}/schedules", async (
             Guid id,
-            IQueryHandler<DentalManagement.Application.Doctors.Queries.GetDoctorWorkSchedules.GetDoctorWorkSchedulesQuery, Result<IReadOnlyList<WorkScheduleDto>>> handler,
+            [FromServices] DoctorService service,
             CancellationToken cancellationToken) =>
         {
-            var result = await handler.Handle(new DentalManagement.Application.Doctors.Queries.GetDoctorWorkSchedules.GetDoctorWorkSchedulesQuery(id), cancellationToken);
+            var result = await service.GetWorkSchedulesAsync(
+                id,
+                cancellationToken);
+
             return result.IsSuccess
                 ? Results.Ok(result.Value)
-                : Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "Không tìm thấy bác sĩ", detail: result.Error!.Message);
+                : ToProblem(result.Error!);
         })
         .WithName("GetDoctorSchedules")
         .RequireAuthorization(DefaultPermissions.Doctors.Read);
 
-        // 7. Assign Work Schedule to Doctor
+        // 7. Thêm một ca trực.
         group.MapPost("/{id:guid}/schedules", async (
             Guid id,
             AssignScheduleRequest request,
-            ICommandHandler<DentalManagement.Application.Doctors.Commands.AssignWorkSchedule.AssignWorkScheduleCommand, Result<WorkScheduleDto>> handler,
+            [FromServices] SchedulesService service,
             CancellationToken cancellationToken) =>
         {
-            var command = new DentalManagement.Application.Doctors.Commands.AssignWorkSchedule.AssignWorkScheduleCommand(
-                id,
-                request.DayOfWeek,
-                request.StartTime,
-                request.EndTime,
-                request.ClinicId,
-                request.IsActive);
-
-            var result = await handler.Handle(command, cancellationToken);
-
-            if (result.IsFailure)
+            try
             {
-                var error = result.Error!;
-                return error.Code switch
-                {
-                    "doctor.not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy bác sĩ",
-                        detail: error.Message),
-                    "doctor.clinic_not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy phòng khám",
-                        detail: error.Message),
-                    "doctor.schedule_conflict" => Results.Problem(
-                        statusCode: StatusCodes.Status409Conflict,
-                        title: "Trùng ca trực",
-                        detail: error.Message),
-                    _ => Results.Problem(
-                        statusCode: StatusCodes.Status400BadRequest,
-                        title: "Gán ca trực thất bại",
-                        detail: error.Message)
-                };
-            }
+                var dto = new AssignWorkScheduleDto(
+                    request.DayOfWeek,
+                    request.StartTime,
+                    request.EndTime,
+                    request.ClinicId,
+                    request.IsActive);
 
-            return Results.Created($"/api/v1/doctors/{id}/schedules/{result.Value!.Id}", result.Value);
+                var schedule = await service.AddAsync(
+                    id,
+                    dto,
+                    cancellationToken);
+
+                return Results.Created(
+                    $"/api/v1/doctors/{id}/schedules/{schedule.Id}",
+                    schedule);
+            }
+            catch (SchedulesException ex)
+            {
+                return ToProblem(ex.Code, ex.Message);
+            }
         })
         .WithName("AssignDoctorSchedule")
         .RequireAuthorization(DefaultPermissions.Doctors.Update);
 
-        // 8. Set All Schedules for Doctor
+        // 8. Thay toàn bộ lịch làm việc.
         group.MapPut("/{id:guid}/schedules", async (
             Guid id,
             SetSchedulesRequest request,
-            ICommandHandler<DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.SetDoctorWorkSchedulesCommand, Result<IReadOnlyList<WorkScheduleDto>>> handler,
+            [FromServices] SchedulesService service,
             CancellationToken cancellationToken) =>
         {
-            var command = new DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.SetDoctorWorkSchedulesCommand(
-                id,
-                request.Schedules);
-
-            var result = await handler.Handle(command, cancellationToken);
-
-            if (result.IsFailure)
+            if (request.Schedules is null)
             {
-                var error = result.Error!;
-                return error.Code switch
-                {
-                    "doctor.not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy bác sĩ",
-                        detail: error.Message),
-                    "doctor.clinic_not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy phòng khám",
-                        detail: error.Message),
-                    "doctor.schedule_conflict" => Results.Problem(
-                        statusCode: StatusCodes.Status409Conflict,
-                        title: "Trùng ca trực",
-                        detail: error.Message),
-                    _ => Results.Problem(
-                        statusCode: StatusCodes.Status400BadRequest,
-                        title: "Cập nhật ca trực thất bại",
-                        detail: error.Message)
-                };
+                return ToProblem(
+                    "schedule.invalid_input",
+                    "Danh sách ca trực không được null.");
             }
 
-            return Results.Ok(result.Value);
+            try
+            {
+                var dto = new SetDoctorWorkSchedulesDto(
+                    request.Schedules);
+
+                var schedules = await service.SetAsync(
+                    id,
+                    dto,
+                    cancellationToken);
+
+                return Results.Ok(schedules);
+            }
+            catch (SchedulesException ex)
+            {
+                return ToProblem(ex.Code, ex.Message);
+            }
         })
         .WithName("SetDoctorSchedules")
         .RequireAuthorization(DefaultPermissions.Doctors.Update);
 
-        // 9. Remove Schedule from Doctor
+        // 9. Xóa một ca trực.
         group.MapDelete("/{id:guid}/schedules/{scheduleId:guid}", async (
             Guid id,
             Guid scheduleId,
-            ICommandHandler<DentalManagement.Application.Doctors.Commands.RemoveWorkSchedule.RemoveWorkScheduleCommand, Result> handler,
+            [FromServices] SchedulesService service,
             CancellationToken cancellationToken) =>
         {
-            var command = new DentalManagement.Application.Doctors.Commands.RemoveWorkSchedule.RemoveWorkScheduleCommand(id, scheduleId);
-            var result = await handler.Handle(command, cancellationToken);
-
-            if (result.IsFailure)
+            try
             {
-                var error = result.Error!;
-                return error.Code switch
-                {
-                    "doctor.not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy bác sĩ",
-                        detail: error.Message),
-                    "doctor.schedule_not_found" => Results.Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Không tìm thấy ca trực",
-                        detail: error.Message),
-                    _ => Results.Problem(
-                        statusCode: StatusCodes.Status400BadRequest,
-                        title: "Xóa ca trực thất bại",
-                        detail: error.Message)
-                };
-            }
+                await service.RemoveAsync(
+                    id,
+                    scheduleId,
+                    cancellationToken);
 
-            return Results.Ok(new { message = "Đã xóa ca trực thành công." });
+                return Results.Ok(new
+                {
+                    message = "Đã xóa ca trực thành công."
+                });
+            }
+            catch (SchedulesException ex)
+            {
+                return ToProblem(ex.Code, ex.Message);
+            }
         })
         .WithName("RemoveDoctorSchedule")
         .RequireAuthorization(DefaultPermissions.Doctors.Update);
 
         return endpoints;
+    }
+
+    private static IResult ToProblem(Error error)
+    {
+        return ToProblem(error.Code, error.Message);
+    }
+
+    private static IResult ToProblem(string code, string message)
+    {
+        var statusCode = code switch
+        {
+            "doctor.not_found" or
+            "doctor.user_not_found" or
+            "doctor.clinic_not_found" or
+            "doctor.schedule_not_found"
+                => StatusCodes.Status404NotFound,
+
+            "doctor.user_already_has_profile" or
+            "doctor.duplicate_license" or
+            "doctor.schedule_conflict"
+                => StatusCodes.Status409Conflict,
+
+            _ => StatusCodes.Status400BadRequest
+        };
+
+        return Results.Problem(
+            statusCode: statusCode,
+            title: "Không thể xử lý yêu cầu bác sĩ",
+            detail: message,
+            extensions: new Dictionary<string, object?>
+            {
+                ["code"] = code
+            });
     }
 }
 
@@ -333,7 +287,7 @@ public sealed record CreateDoctorRequest(
     int YearsOfExperience = 0,
     string? Specialty = null,
     string? Biography = null,
-    IEnumerable<WorkScheduleDto>? WorkSchedules = null);
+    IReadOnlyList<WorkScheduleInputDto>? WorkSchedules = null);
 
 public sealed record UpdateDoctorRequest(
     string MedicalLicenseNumber,
@@ -341,7 +295,7 @@ public sealed record UpdateDoctorRequest(
     int YearsOfExperience = 0,
     string? Specialty = null,
     string? Biography = null,
-    IEnumerable<WorkScheduleDto>? WorkSchedules = null);
+    IReadOnlyList<WorkScheduleInputDto>? WorkSchedules = null);
 
 public sealed record AssignScheduleRequest(
     int DayOfWeek,
@@ -351,4 +305,4 @@ public sealed record AssignScheduleRequest(
     bool IsActive = true);
 
 public sealed record SetSchedulesRequest(
-    IEnumerable<DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.WorkScheduleInputDto> Schedules);
+    IReadOnlyList<WorkScheduleInputDto>? Schedules);

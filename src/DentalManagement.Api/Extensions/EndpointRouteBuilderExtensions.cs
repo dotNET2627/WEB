@@ -14,6 +14,7 @@ public static class EndpointRouteBuilderExtensions
         }));
 
         endpoints.MapAuthEndpoints();
+        endpoints.MapAppointmentEndpoints();
         endpoints.MapClinicEndpoints();
         endpoints.MapDoctorEndpoints();
 
