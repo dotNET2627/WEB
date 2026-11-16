@@ -54,6 +54,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IPatientRepository, MongoPatientRepository>();
         services.AddScoped<IAppointmentRepository, MongoAppointmentRepository>();
+        services.AddScoped<IInvoiceRepository, MongoInvoiceRepository>();
         services.AddScoped<ITransactionRunner, MongoTransactionRunner>();
         services.AddScoped<IFileStorage, NotConfiguredFileStorage>();
 

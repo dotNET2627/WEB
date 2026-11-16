@@ -34,6 +34,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.GetAppointment.GetAppointmentQuery, Result<DentalManagement.Application.Appointments.GetAppointment.AppointmentDto>>, DentalManagement.Application.Appointments.GetAppointment.GetAppointmentHandler>();
         services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.ListAppointments.ListAppointmentsQuery, Result<IReadOnlyList<DentalManagement.Application.Appointments.ListAppointments.AppointmentSummaryDto>>>, DentalManagement.Application.Appointments.ListAppointments.ListAppointmentsHandler>();
 
+        // Invoice handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.CreateInvoice.CreateInvoiceCommand, Result<Guid>>, DentalManagement.Application.Invoices.CreateInvoice.CreateInvoiceHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.GetInvoice.GetInvoiceQuery, Result<DentalManagement.Application.Invoices.GetInvoice.InvoiceDto>>, DentalManagement.Application.Invoices.GetInvoice.GetInvoiceHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.ListInvoices.ListInvoicesQuery, Result<IReadOnlyList<DentalManagement.Application.Invoices.ListInvoices.InvoiceSummaryDto>>>, DentalManagement.Application.Invoices.ListInvoices.ListInvoicesHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.RecordPayment.RecordPaymentCommand, Result>, DentalManagement.Application.Invoices.RecordPayment.RecordPaymentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceCommand, Result>, DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceHandler>();
+
         // Check-in workflow handlers
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentCommand, Result>, DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.StartExam.StartExamCommand, Result>, DentalManagement.Application.Appointments.StartExam.StartExamHandler>();

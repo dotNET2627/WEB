@@ -13,11 +13,23 @@ public sealed class InvoiceDocument : MongoDocument
     [BsonElement("invoiceNumber")]
     public string InvoiceNumber { get; init; } = string.Empty;
 
+    [BsonElement("appointmentId")]
+    public Guid? AppointmentId { get; init; }
+
     [BsonElement("status")]
     public string Status { get; init; } = string.Empty;
 
     [BsonElement("discountAmount")]
     public decimal DiscountAmount { get; init; }
+
+    [BsonElement("discountPercent")]
+    public decimal DiscountPercent { get; init; }
+
+    [BsonElement("notes")]
+    public string? Notes { get; init; }
+
+    [BsonElement("issuedAt")]
+    public DateTimeOffset IssuedAt { get; init; }
 
     [BsonElement("lines")]
     public IReadOnlyCollection<InvoiceLineDocument> Lines { get; init; } = [];
@@ -26,5 +38,15 @@ public sealed class InvoiceDocument : MongoDocument
     public IReadOnlyCollection<PaymentDocument> Payments { get; init; } = [];
 }
 
-public sealed record InvoiceLineDocument(string Description, int Quantity, decimal UnitPrice);
-public sealed record PaymentDocument(decimal Amount, string Method, DateTimeOffset PaidAt, string? Reference);
+public sealed record InvoiceLineDocument(
+    string Description,
+    int Quantity,
+    decimal UnitPrice,
+    Guid? ServiceId,
+    string? ToothNumber);
+
+public sealed record PaymentDocument(
+    decimal Amount,
+    string Method,
+    DateTimeOffset PaidAt,
+    string? Reference);

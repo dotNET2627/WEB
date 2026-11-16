@@ -1,5 +1,14 @@
-import { ModulePlaceholder } from "@/components/ui/module-placeholder";
+"use client";
+
+import { useAuth } from "@/hooks/useAuth";
+import { InvoiceListView } from "@/features/billing/InvoiceListView";
 
 export default function InvoicesPage() {
-  return <ModulePlaceholder title="Hóa đơn & thanh toán" description="Lập hóa đơn, giảm giá, thanh toán nhiều phương thức và công nợ." />;
+  const { user } = useAuth();
+  const clinicId =
+    user?.activeClinicId ||
+    user?.assignedClinicIds?.[0] ||
+    "00000000-0000-0000-0000-000000000000";
+
+  return <InvoiceListView clinicId={clinicId} />;
 }
