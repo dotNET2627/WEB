@@ -14,6 +14,7 @@ const items = [
   { href: "/invoices", label: "Hóa đơn" },
   { href: "/insurance", label: "Bảo hiểm" },
   { href: "/reports/financial", label: "Báo cáo tài chính" },
+  { href: "/cashier-shifts", label: "Chốt ca thu ngân" },
   { href: "/settings", label: "Thiết lập" }
 ];
 

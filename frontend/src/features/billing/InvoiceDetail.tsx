@@ -5,6 +5,7 @@ import type { InvoiceDto } from "@/types/invoice";
 import { PAYMENT_METHOD_LABELS } from "@/types/invoice";
 import { InvoiceStatusBadge } from "./InvoiceStatusBadge";
 import { RecordPaymentModal } from "./RecordPaymentModal";
+import { InvoicePrintModal } from "./print/InvoicePrintModal";
 import { invoiceService } from "@/services/invoice-service";
 import { formatVND } from "@/lib/format";
 
@@ -20,6 +21,7 @@ export function InvoiceDetail({
   onCancel,
 }: InvoiceDetailProps) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   const canPay =
@@ -69,6 +71,12 @@ export function InvoiceDetail({
         </div>
 
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowPrintModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            🖨️ In hóa đơn / Phiếu thu
+          </button>
           {canPay && (
             <button
               onClick={() => setShowPaymentModal(true)}
@@ -241,6 +249,14 @@ export function InvoiceDetail({
             setShowPaymentModal(false);
             onRefresh?.();
           }}
+        />
+      )}
+
+      {/* Invoice & Receipt Print Modal */}
+      {showPrintModal && (
+        <InvoicePrintModal
+          invoice={invoice}
+          onClose={() => setShowPrintModal(false)}
         />
       )}
     </div>

@@ -49,6 +49,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<DentalManagement.Application.Insurance.ListClaims.ListInsuranceClaimsQuery, Result<IReadOnlyList<DentalManagement.Application.Insurance.ListClaims.InsuranceClaimSummaryDto>>>, DentalManagement.Application.Insurance.ListClaims.ListInsuranceClaimsHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Insurance.UpdateClaimStatus.UpdateInsuranceClaimStatusCommand, Result>, DentalManagement.Application.Insurance.UpdateClaimStatus.UpdateInsuranceClaimStatusHandler>();
 
+        // Cashier Shift handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Billing.Shifts.OpenShift.OpenCashierShiftCommand, Result<Guid>>, DentalManagement.Application.Billing.Shifts.OpenShift.OpenCashierShiftHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Billing.Shifts.GetCurrentShift.GetCurrentCashierShiftQuery, Result<DentalManagement.Application.Billing.Shifts.CashierShiftDto?>>, DentalManagement.Application.Billing.Shifts.GetCurrentShift.GetCurrentCashierShiftHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Billing.Shifts.CloseShift.CloseCashierShiftCommand, Result>, DentalManagement.Application.Billing.Shifts.CloseShift.CloseCashierShiftHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Billing.Shifts.ListShifts.ListCashierShiftsQuery, Result<IReadOnlyList<DentalManagement.Application.Billing.Shifts.CashierShiftSummaryDto>>>, DentalManagement.Application.Billing.Shifts.ListShifts.ListCashierShiftsHandler>();
+
         // Check-in workflow handlers
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentCommand, Result>, DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.StartExam.StartExamCommand, Result>, DentalManagement.Application.Appointments.StartExam.StartExamHandler>();

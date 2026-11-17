@@ -37,6 +37,8 @@ export interface PaymentDto {
   method: string;
   paidAt: string;
   reference?: string | null;
+  note?: string | null;
+  id?: string | null;
 }
 
 export interface InvoiceSummaryDto {
@@ -74,6 +76,7 @@ export interface RecordPaymentRequest {
   amount: number;
   method: string;
   reference?: string | null;
+  note?: string | null;
 }
 
 export interface InvoiceVietQrDto {
