@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.RecordPayment.RecordPaymentCommand, Result>, DentalManagement.Application.Invoices.RecordPayment.RecordPaymentHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceCommand, Result>, DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceHandler>();
         services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrQuery, Result<DentalManagement.Application.Invoices.VietQr.InvoiceVietQrDto>>, DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.Reports.GetFinancialReport.GetFinancialReportQuery, Result<DentalManagement.Application.Invoices.Reports.GetFinancialReport.FinancialReportDto>>, DentalManagement.Application.Invoices.Reports.GetFinancialReport.GetFinancialReportHandler>();
 
         // Insurance Claim handlers
         services.AddScoped<ICommandHandler<DentalManagement.Application.Insurance.CreateClaim.CreateInsuranceClaimCommand, Result<Guid>>, DentalManagement.Application.Insurance.CreateClaim.CreateInsuranceClaimHandler>();

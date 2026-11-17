@@ -52,6 +52,48 @@ public sealed class MongoInvoiceRepository : IInvoiceRepository
         return docs.Select(InvoiceDocumentMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<Invoice>> GetForFinancialReportAsync(
+        Guid clinicId,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        CancellationToken cancellationToken)
+    {
+        var builder = Builders<InvoiceDocument>.Filter;
+        var filter = builder.Eq(d => d.ClinicId, clinicId);
+
+        if (from.HasValue || to.HasValue)
+        {
+            var issuedFilter = builder.Empty;
+            var paymentFilter = builder.Empty;
+
+            if (from.HasValue && to.HasValue)
+            {
+                issuedFilter = builder.Gte(d => d.IssuedAt, from.Value) & builder.Lte(d => d.IssuedAt, to.Value);
+                paymentFilter = builder.ElemMatch(d => d.Payments, p => p.PaidAt >= from.Value && p.PaidAt <= to.Value);
+            }
+            else if (from.HasValue)
+            {
+                issuedFilter = builder.Gte(d => d.IssuedAt, from.Value);
+                paymentFilter = builder.ElemMatch(d => d.Payments, p => p.PaidAt >= from.Value);
+            }
+            else if (to.HasValue)
+            {
+                issuedFilter = builder.Lte(d => d.IssuedAt, to.Value);
+                paymentFilter = builder.ElemMatch(d => d.Payments, p => p.PaidAt <= to.Value);
+            }
+
+            var hasDebt = builder.In(d => d.Status, new[] { "Unpaid", "PartiallyPaid" });
+            filter &= (issuedFilter | paymentFilter | hasDebt);
+        }
+
+        var docs = await _context.Invoices
+            .Find(filter)
+            .SortByDescending(d => d.IssuedAt)
+            .ToListAsync(cancellationToken);
+
+        return docs.Select(InvoiceDocumentMapper.ToDomain).ToList();
+    }
+
     public Task<bool> InvoiceNumberExistsAsync(Guid clinicId, string invoiceNumber, CancellationToken cancellationToken) =>
         _context.Invoices
             .Find(d => d.ClinicId == clinicId && d.InvoiceNumber == invoiceNumber)

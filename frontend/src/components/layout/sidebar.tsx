@@ -13,6 +13,7 @@ const items = [
   { href: "/inventory", label: "Kho vật tư" },
   { href: "/invoices", label: "Hóa đơn" },
   { href: "/insurance", label: "Bảo hiểm" },
+  { href: "/reports/financial", label: "Báo cáo tài chính" },
   { href: "/settings", label: "Thiết lập" }
 ];
 
