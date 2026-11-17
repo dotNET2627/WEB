@@ -42,6 +42,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceCommand, Result>, DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceHandler>();
         services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrQuery, Result<DentalManagement.Application.Invoices.VietQr.InvoiceVietQrDto>>, DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrHandler>();
 
+        // Insurance Claim handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Insurance.CreateClaim.CreateInsuranceClaimCommand, Result<Guid>>, DentalManagement.Application.Insurance.CreateClaim.CreateInsuranceClaimHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Insurance.GetClaim.GetInsuranceClaimQuery, Result<DentalManagement.Application.Insurance.GetClaim.InsuranceClaimDto>>, DentalManagement.Application.Insurance.GetClaim.GetInsuranceClaimHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Insurance.ListClaims.ListInsuranceClaimsQuery, Result<IReadOnlyList<DentalManagement.Application.Insurance.ListClaims.InsuranceClaimSummaryDto>>>, DentalManagement.Application.Insurance.ListClaims.ListInsuranceClaimsHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Insurance.UpdateClaimStatus.UpdateInsuranceClaimStatusCommand, Result>, DentalManagement.Application.Insurance.UpdateClaimStatus.UpdateInsuranceClaimStatusHandler>();
+
         // Check-in workflow handlers
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentCommand, Result>, DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.StartExam.StartExamCommand, Result>, DentalManagement.Application.Appointments.StartExam.StartExamHandler>();

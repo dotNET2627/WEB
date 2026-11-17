@@ -82,14 +82,14 @@ public static class InvoiceEndpoints
         .WithName("GetInvoiceVietQr")
         .RequireAuthorization(DefaultPermissions.Invoices.Read);
 
-        // POST /{id}/payments — ghi nhận thanh toán
+        // POST /{id}/payments — ghi nhận thanh toán (hỗ trợ thanh toán từng phần)
         group.MapPost("/{id:guid}/payments", async (
             Guid id,
             RecordPaymentRequest req,
             ICommandHandler<RecordPaymentCommand, Result> handler,
             CancellationToken ct) =>
         {
-            var result = await handler.Handle(new RecordPaymentCommand(id, req.Amount, req.Method, req.Reference), ct);
+            var result = await handler.Handle(new RecordPaymentCommand(id, req.Amount, req.Method, req.Reference, req.Note), ct);
             return result.IsSuccess
                 ? Results.NoContent()
                 : MapError(result.Error!);
@@ -144,4 +144,5 @@ public sealed record CreateInvoiceLineRequest(
 public sealed record RecordPaymentRequest(
     decimal Amount,
     string Method,
-    string? Reference);
+    string? Reference,
+    string? Note = null);

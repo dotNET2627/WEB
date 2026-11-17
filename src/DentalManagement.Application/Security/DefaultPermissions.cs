@@ -46,6 +46,13 @@ public static class DefaultPermissions
         public const string Adjust = "inventory.adjust";
     }
 
+    public static class Insurance
+    {
+        public const string Read = "insurance.read";
+        public const string Create = "insurance.create";
+        public const string Update = "insurance.update";
+    }
+
     public static class System
     {
         public const string ViewReports = "reports.view";
@@ -60,6 +67,7 @@ public static class DefaultPermissions
         Invoices.Read, Invoices.Create, Invoices.Pay,
         Prescriptions.Read, Prescriptions.Create, Prescriptions.Dispense,
         Inventory.Read, Inventory.Import, Inventory.Export, Inventory.Adjust,
+        Insurance.Read, Insurance.Create, Insurance.Update,
         System.ViewReports, System.ManageSettings
     ];
 }

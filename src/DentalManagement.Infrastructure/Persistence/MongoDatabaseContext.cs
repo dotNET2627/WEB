@@ -29,6 +29,7 @@ public sealed class MongoDatabaseContext
     public IMongoCollection<PatientDocument> Patients => Database.GetCollection<PatientDocument>(CollectionNames.Patients);
     public IMongoCollection<AppointmentDocument> Appointments => Database.GetCollection<AppointmentDocument>(CollectionNames.Appointments);
     public IMongoCollection<InvoiceDocument> Invoices => Database.GetCollection<InvoiceDocument>(CollectionNames.Invoices);
+    public IMongoCollection<InsuranceClaimDocument> InsuranceClaims => Database.GetCollection<InsuranceClaimDocument>(CollectionNames.InsuranceClaims);
     public IMongoCollection<InventoryBatchDocument> InventoryBatches => Database.GetCollection<InventoryBatchDocument>(CollectionNames.InventoryBatches);
     public IMongoCollection<UserDocument> Users => Database.GetCollection<UserDocument>(CollectionNames.Users);
     public IMongoCollection<RoleDocument> Roles => Database.GetCollection<RoleDocument>(CollectionNames.Roles);

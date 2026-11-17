@@ -1,5 +1,14 @@
-import { ModulePlaceholder } from "@/components/ui/module-placeholder";
+"use client";
+
+import { useAuth } from "@/hooks/useAuth";
+import { InsuranceClaimListView } from "@/features/insurance/InsuranceClaimListView";
 
 export default function InsurancePage() {
-  return <ModulePlaceholder title="Bảo hiểm" description="Quản lý thẻ bảo hiểm, yêu cầu bồi hoàn và trạng thái phê duyệt." />;
+  const { user } = useAuth();
+  const clinicId =
+    user?.activeClinicId ||
+    user?.assignedClinicIds?.[0] ||
+    "00000000-0000-0000-0000-000000000000";
+
+  return <InsuranceClaimListView clinicId={clinicId} />;
 }

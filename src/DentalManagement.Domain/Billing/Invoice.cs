@@ -55,6 +55,7 @@ public sealed class Invoice : AuditableEntity
     public decimal TotalAmount => Math.Max(0, SubTotal - DiscountValue);
     public decimal PaidAmount => _payments.Sum(p => p.Amount);
     public decimal OutstandingAmount => Math.Max(0, TotalAmount - PaidAmount);
+    public bool IsPartiallyPaid => Status == InvoiceStatus.PartiallyPaid;
 
     public IReadOnlyList<InvoiceLine> Lines => _lines.AsReadOnly();
     public IReadOnlyList<Payment> Payments => _payments.AsReadOnly();
@@ -163,4 +164,6 @@ public sealed record Payment(
     decimal Amount,
     string Method,
     DateTimeOffset PaidAt,
-    string? Reference = null);
+    string? Reference = null,
+    string? Note = null,
+    Guid? Id = null);

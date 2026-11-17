@@ -36,4 +36,6 @@ public sealed record PaymentDto(
     decimal Amount,
     string Method,
     DateTimeOffset PaidAt,
-    string? Reference);
+    string? Reference,
+    string? Note = null,
+    Guid? Id = null);

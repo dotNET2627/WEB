@@ -23,7 +23,7 @@ public sealed class RecordPaymentHandler
         if (invoice is null)
             return Result.Failure("invoice.not_found", $"Không tìm thấy hóa đơn '{command.InvoiceId}'.");
 
-        var payment = new Payment(command.Amount, command.Method, DateTimeOffset.UtcNow, command.Reference);
+        var payment = new Payment(command.Amount, command.Method, DateTimeOffset.UtcNow, command.Reference, command.Note);
         var result  = invoice.RegisterPayment(payment);
         if (result.IsFailure) return result;
 

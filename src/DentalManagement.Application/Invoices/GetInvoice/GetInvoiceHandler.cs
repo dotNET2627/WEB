@@ -47,6 +47,6 @@ public sealed class GetInvoiceHandler
             invoice.Lines.Select(l => new InvoiceLineDto(
                 l.Description, l.Quantity, l.UnitPrice, l.Amount, l.ServiceId, l.ToothNumber)).ToList(),
             invoice.Payments.Select(p => new PaymentDto(
-                p.Amount, p.Method, p.PaidAt, p.Reference)).ToList()));
+                p.Amount, p.Method, p.PaidAt, p.Reference, p.Note, p.Id)).ToList()));
     }
 }

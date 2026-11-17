@@ -23,7 +23,7 @@ internal static class InvoiceDocumentMapper
             .Select(l => new InvoiceLineDocument(l.Description, l.Quantity, l.UnitPrice, l.ServiceId, l.ToothNumber))
             .ToList(),
         Payments = invoice.Payments
-            .Select(p => new PaymentDocument(p.Amount, p.Method, p.PaidAt, p.Reference))
+            .Select(p => new PaymentDocument(p.Amount, p.Method, p.PaidAt, p.Reference, p.Note, p.Id))
             .ToList()
     };
 
@@ -35,7 +35,7 @@ internal static class InvoiceDocumentMapper
             new InvoiceLine(l.Description, l.Quantity, l.UnitPrice, l.ServiceId, l.ToothNumber));
 
         var payments = doc.Payments.Select(p =>
-            new Payment(p.Amount, p.Method, p.PaidAt, p.Reference));
+            new Payment(p.Amount, p.Method, p.PaidAt, p.Reference, p.Note, p.Id));
 
         return Invoice.Rehydrate(
             doc.Id,
