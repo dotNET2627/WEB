@@ -67,6 +67,21 @@ public static class InvoiceEndpoints
         .WithName("ListInvoices")
         .RequireAuthorization(DefaultPermissions.Invoices.Read);
 
+        // GET /{id}/vietqr — lấy mã VietQR chuẩn NAPAS thanh toán
+        group.MapGet("/{id:guid}/vietqr", async (
+            Guid id,
+            decimal? amount,
+            IQueryHandler<DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrQuery, Result<DentalManagement.Application.Invoices.VietQr.InvoiceVietQrDto>> handler,
+            CancellationToken ct) =>
+        {
+            var result = await handler.Handle(new DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrQuery(id, amount), ct);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : Results.Problem(statusCode: 404, title: "Lỗi sinh mã VietQR", detail: result.Error!.Message);
+        })
+        .WithName("GetInvoiceVietQr")
+        .RequireAuthorization(DefaultPermissions.Invoices.Read);
+
         // POST /{id}/payments — ghi nhận thanh toán
         group.MapPost("/{id:guid}/payments", async (
             Guid id,

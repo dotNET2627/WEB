@@ -233,6 +233,8 @@ export function InvoiceDetail({
       {showPaymentModal && (
         <RecordPaymentModal
           invoiceId={invoice.id}
+          invoiceNumber={invoice.invoiceNumber}
+          patientName={invoice.patientName}
           outstandingAmount={invoice.outstandingAmount}
           onClose={() => setShowPaymentModal(false)}
           onSuccess={() => {

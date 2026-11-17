@@ -76,12 +76,26 @@ export interface RecordPaymentRequest {
   reference?: string | null;
 }
 
+export interface InvoiceVietQrDto {
+  invoiceId: string;
+  invoiceNumber: string;
+  patientName: string;
+  amount: number;
+  bankBin: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  description: string;
+  qrImageUrl: string;
+  qrPayload: string;
+}
+
 export type PaymentMethod = "Cash" | "Card" | "Transfer" | "Insurance" | "Other";
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   Cash: "Tiền mặt",
-  Card: "Thẻ ngân hàng",
-  Transfer: "Chuyển khoản",
+  Card: "Thẻ ngân hàng (POS)",
+  Transfer: "Chuyển khoản (VietQR)",
   Insurance: "Bảo hiểm",
   Other: "Khác",
 };

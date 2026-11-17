@@ -40,6 +40,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.ListInvoices.ListInvoicesQuery, Result<IReadOnlyList<DentalManagement.Application.Invoices.ListInvoices.InvoiceSummaryDto>>>, DentalManagement.Application.Invoices.ListInvoices.ListInvoicesHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.RecordPayment.RecordPaymentCommand, Result>, DentalManagement.Application.Invoices.RecordPayment.RecordPaymentHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceCommand, Result>, DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrQuery, Result<DentalManagement.Application.Invoices.VietQr.InvoiceVietQrDto>>, DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrHandler>();
 
         // Check-in workflow handlers
         services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentCommand, Result>, DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentHandler>();

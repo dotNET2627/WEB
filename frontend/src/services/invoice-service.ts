@@ -3,6 +3,7 @@ import type {
   CreateInvoiceRequest,
   InvoiceDto,
   InvoiceSummaryDto,
+  InvoiceVietQrDto,
   RecordPaymentRequest,
 } from "@/types/invoice";
 
@@ -30,6 +31,11 @@ export const invoiceService = {
 
   recordPayment: (id: string, body: RecordPaymentRequest): Promise<void> =>
     apiClient.post(`${BASE}/${id}/payments`, body),
+
+  getVietQr: (id: string, amount?: number): Promise<InvoiceVietQrDto> => {
+    const q = amount && amount > 0 ? `?amount=${amount}` : "";
+    return apiClient.get(`${BASE}/${id}/vietqr${q}`);
+  },
 
   cancel: (id: string): Promise<void> =>
     apiClient.patch(`${BASE}/${id}/cancel`),

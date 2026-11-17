@@ -30,6 +30,8 @@ export function InvoiceListView({ clinicId }: InvoiceListViewProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState<{
     id: string;
+    invoiceNumber: string;
+    patientName: string;
     outstandingAmount: number;
   } | null>(null);
 
@@ -285,6 +287,8 @@ export function InvoiceListView({ clinicId }: InvoiceListViewProps) {
                           onClick={() =>
                             setPaymentTarget({
                               id: inv.id,
+                              invoiceNumber: inv.invoiceNumber,
+                              patientName: inv.patientName,
                               outstandingAmount: inv.outstandingAmount,
                             })
                           }
@@ -325,6 +329,8 @@ export function InvoiceListView({ clinicId }: InvoiceListViewProps) {
       {paymentTarget && (
         <RecordPaymentModal
           invoiceId={paymentTarget.id}
+          invoiceNumber={paymentTarget.invoiceNumber}
+          patientName={paymentTarget.patientName}
           outstandingAmount={paymentTarget.outstandingAmount}
           onClose={() => setPaymentTarget(null)}
           onSuccess={() => {
