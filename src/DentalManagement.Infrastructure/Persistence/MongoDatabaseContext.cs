@@ -26,6 +26,8 @@ public sealed class MongoDatabaseContext
     public IMongoClient Client { get; }
     public IMongoDatabase Database { get; }
 
+    public IMongoCollection<ClinicDocument> Clinics => Database.GetCollection<ClinicDocument>(CollectionNames.Clinics);
+    public IMongoCollection<DoctorDocument> Doctors => Database.GetCollection<DoctorDocument>(CollectionNames.Doctors);
     public IMongoCollection<PatientDocument> Patients => Database.GetCollection<PatientDocument>(CollectionNames.Patients);
     public IMongoCollection<AppointmentDocument> Appointments => Database.GetCollection<AppointmentDocument>(CollectionNames.Appointments);
     public IMongoCollection<InvoiceDocument> Invoices => Database.GetCollection<InvoiceDocument>(CollectionNames.Invoices);

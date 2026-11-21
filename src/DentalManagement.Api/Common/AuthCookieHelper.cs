@@ -18,7 +18,7 @@ public static class AuthCookieHelper
         {
             HttpOnly = true,
             Secure = secure,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.Lax,
             Path = CookiePath,
             Expires = rememberMe ? expiresAt : null
         };
@@ -35,7 +35,7 @@ public static class AuthCookieHelper
         {
             HttpOnly = true,
             Secure = secure,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.Lax,
             Path = CookiePath,
             Expires = DateTimeOffset.UtcNow.AddDays(-1)
         };

@@ -295,26 +295,29 @@ Value Object/Record: `{ Id, Code, Name, UnitPrice, IsActive }`
 | `InsuranceClaimStatus` | Processing, Approved, Rejected, Paid | InsuranceClaim |
 | `AuditAction` | Create, Update, Delete, View, SignIn, SignOut, Export | AuditLog |
 
-### 3.4 MongoDB Collections (17 collections trong production)
+### 3.4 MongoDB Collections (18 collections trong hệ thống)
+
+Quản lý tập trung tại `CollectionNames.cs` và khởi tạo tự động bởi `MongoIndexInitializer` + `DatabaseSeedHostedService`:
 
 ```
-users              — Tài khoản người dùng
-roles              — Vai trò hệ thống
-clinics            — Phòng khám / Chi nhánh
-doctors            — Hồ sơ bác sĩ
-patients           — Hồ sơ bệnh nhân (có embedded medicalHistory)
-appointments       — Lịch hẹn (có embedded plannedServices)
-treatmentPlans     — Phác đồ điều trị
-services           — Danh mục dịch vụ
-medicalImages      — Ảnh X-quang, hình ảnh y tế
-inventoryItems     — Danh mục vật tư
-inventoryBatches   — Lô vật tư (FEFO)
+users                 — Tài khoản người dùng
+roles                 — Vai trò hệ thống
+refresh_tokens        — Phiên đăng nhập (TTL Index tự hủy)
+clinics               — Phòng khám / Chi nhánh
+doctors               — Hồ sơ bác sĩ (kèm lịch trực tuần hoàn)
+patients              — Hồ sơ bệnh nhân (có embedded medicalHistory)
+appointments          — Lịch hẹn (có embedded plannedServices)
+treatmentPlans        — Phác đồ điều trị
+services              — Danh mục dịch vụ
+medicalImages         — Ảnh X-quang, hình ảnh y tế
+inventoryItems        — Danh mục vật tư
+inventoryBatches      — Lô vật tư (FEFO)
 inventoryTransactions — Giao dịch kho
-prescriptions      — Đơn thuốc
-invoices           — Hóa đơn (có embedded lines + payments)
-discountPrograms   — Chương trình giảm giá / Voucher
-insuranceClaims    — Yêu cầu bảo hiểm
-auditLogs          — Nhật ký kiểm toán (append-only)
+prescriptions         — Đơn thuốc
+invoices              — Hóa đơn (có embedded lines + payments)
+discountPrograms      — Chương trình giảm giá / Voucher
+insuranceClaims       — Yêu cầu bảo hiểm
+auditLogs             — Nhật ký kiểm toán (append-only)
 ```
 
 ### 3.5 Sơ đồ quan hệ chính

@@ -6,14 +6,6 @@ public static class EndpointRouteBuilderExtensions
 {
     public static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/health", () => Results.Ok(new
-        {
-            status = "healthy",
-            service = "DentalManagement.Api"
-        }))
-        .WithName("HealthCheck")
-        .WithTags("System");
-
         var api = endpoints.MapGroup("/api/v1");
         api.MapGet("/", () => Results.Ok(new
         {
@@ -22,8 +14,7 @@ public static class EndpointRouteBuilderExtensions
         }));
 
         endpoints.MapAuthEndpoints();
-        endpoints.MapServiceEndpoints();
-        endpoints.MapPromotionEndpoints();
+        endpoints.MapAppointmentEndpoints();
 
         // Demonstration of Dynamic Permission Policy
         api.MapGet("/patients-demo", () => Results.Ok(new[]

@@ -53,6 +53,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRefreshTokenRepository, MongoRefreshTokenRepository>();
 
         services.AddScoped<IPatientRepository, MongoPatientRepository>();
+        services.AddScoped<IClinicRepository, MongoClinicRepository>();
+        services.AddScoped<IDoctorRepository, MongoDoctorRepository>();
         services.AddScoped<IAppointmentRepository, MongoAppointmentRepository>();
         services.AddScoped<IServiceRepository, MongoServiceRepository>();
         services.AddScoped<IServiceCategoryRepository, MongoServiceCategoryRepository>();

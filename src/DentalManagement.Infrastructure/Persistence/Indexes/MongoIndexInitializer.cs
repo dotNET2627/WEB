@@ -68,34 +68,36 @@ public sealed class MongoIndexInitializer
                 new CreateIndexOptions { ExpireAfter = TimeSpan.Zero, Name = "ttl_refresh_tokens_expires_at" }),
             cancellationToken: cancellationToken);
 
-        await _context.Services.Indexes.CreateOneAsync(
-            new CreateIndexModel<ServiceDocument>(
-                Builders<ServiceDocument>.IndexKeys.Ascending(document => document.Code),
-                new CreateIndexOptions { Unique = true, Name = "uq_services_code" }),
+        // Clinics
+        await _context.Clinics.Indexes.CreateOneAsync(
+            new CreateIndexModel<ClinicDocument>(
+                Builders<ClinicDocument>.IndexKeys.Ascending(document => document.Name),
+                new CreateIndexOptions { Name = "ix_clinics_name" }),
             cancellationToken: cancellationToken);
 
-        await _context.Services.Indexes.CreateOneAsync(
-            new CreateIndexModel<ServiceDocument>(
-                Builders<ServiceDocument>.IndexKeys.Ascending(document => document.CategoryId).Ascending(document => document.IsActive),
-                new CreateIndexOptions { Name = "ix_services_category_active" }),
+        // Doctors
+        await _context.Doctors.Indexes.CreateOneAsync(
+            new CreateIndexModel<DoctorDocument>(
+                Builders<DoctorDocument>.IndexKeys.Ascending(document => document.UserId),
+                new CreateIndexOptions { Unique = true, Name = "uq_doctors_user_id" }),
             cancellationToken: cancellationToken);
 
-        await _context.ServiceCategories.Indexes.CreateOneAsync(
-            new CreateIndexModel<ServiceCategoryDocument>(
-                Builders<ServiceCategoryDocument>.IndexKeys.Ascending(document => document.Name),
-                new CreateIndexOptions { Unique = true, Name = "uq_service_categories_name" }),
+        await _context.Doctors.Indexes.CreateOneAsync(
+            new CreateIndexModel<DoctorDocument>(
+                Builders<DoctorDocument>.IndexKeys.Ascending(document => document.MedicalLicenseNumber),
+                new CreateIndexOptions { Unique = true, Name = "uq_doctors_medical_license_number" }),
             cancellationToken: cancellationToken);
 
-        await _context.DiscountPromos.Indexes.CreateOneAsync(
-            new CreateIndexModel<DiscountPromoDocument>(
-                Builders<DiscountPromoDocument>.IndexKeys.Ascending(document => document.Code),
-                new CreateIndexOptions { Unique = true, Name = "uq_discount_promos_code" }),
+        await _context.Doctors.Indexes.CreateOneAsync(
+            new CreateIndexModel<DoctorDocument>(
+                Builders<DoctorDocument>.IndexKeys.Ascending(document => document.ClinicId),
+                new CreateIndexOptions { Name = "ix_doctors_clinic_id" }),
             cancellationToken: cancellationToken);
 
-        await _context.DiscountPromos.Indexes.CreateOneAsync(
-            new CreateIndexModel<DiscountPromoDocument>(
-                Builders<DiscountPromoDocument>.IndexKeys.Ascending(document => document.IsActive).Ascending(document => document.EndDate),
-                new CreateIndexOptions { Name = "ix_discount_promos_active_enddate" }),
+        await _context.Doctors.Indexes.CreateOneAsync(
+            new CreateIndexModel<DoctorDocument>(
+                Builders<DoctorDocument>.IndexKeys.Ascending("workSchedules.dayOfWeek"),
+                new CreateIndexOptions { Name = "ix_doctors_work_schedules_day_of_week" }),
             cancellationToken: cancellationToken);
     }
 }

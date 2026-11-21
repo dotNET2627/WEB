@@ -14,7 +14,7 @@ using DentalManagement.Application.Identity.Commands.RefreshToken;
 using DentalManagement.Application.Identity.Commands.RevokeToken;
 using DentalManagement.Application.Identity.Commands.SwitchClinic;
 using DentalManagement.Application.Identity.Queries.GetCurrentUser;
-using DentalManagement.Application.Patients.CreatePatient;
+using DentalManagement.Application.Patients;
 using DentalManagement.Domain.Common;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,8 +35,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<SwitchClinicCommand, Result<SwitchClinicResponseDto>>, SwitchClinicCommandHandler>();
         services.AddScoped<IQueryHandler<GetCurrentUserQuery, Result<CurrentUserDto>>, GetCurrentUserQueryHandler>();
 
-        // Patient Handlers
-        services.AddScoped<ICommandHandler<CreatePatientCommand, Result<Guid>>, CreatePatientHandler>();
+        // Feature Handlers
+        services.AddScoped<PatientService>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CreateAppointment.CreateAppointmentCommand, Result<Guid>>, DentalManagement.Application.Appointments.CreateAppointment.CreateAppointmentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.UpdateAppointment.UpdateAppointmentCommand, Result>, DentalManagement.Application.Appointments.UpdateAppointment.UpdateAppointmentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.ConfirmAppointment.ConfirmAppointmentCommand, Result>, DentalManagement.Application.Appointments.ConfirmAppointment.ConfirmAppointmentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CancelAppointment.CancelAppointmentCommand, Result>, DentalManagement.Application.Appointments.CancelAppointment.CancelAppointmentHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.GetAppointment.GetAppointmentQuery, Result<DentalManagement.Application.Appointments.GetAppointment.AppointmentDto>>, DentalManagement.Application.Appointments.GetAppointment.GetAppointmentHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.ListAppointments.ListAppointmentsQuery, Result<IReadOnlyList<DentalManagement.Application.Appointments.ListAppointments.AppointmentSummaryDto>>>, DentalManagement.Application.Appointments.ListAppointments.ListAppointmentsHandler>();
 
         // Catalog / Services Handlers
         services.AddScoped<ICommandHandler<CreateDentalServiceCommand, Result<Guid>>, CreateDentalServiceCommandHandler>();

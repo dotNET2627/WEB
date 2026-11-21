@@ -1,13 +1,12 @@
 "use client";
 
 import React, { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiClientError } from "@/lib/api-client";
 
 function AdminLoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const rawReturnUrl = searchParams.get("returnUrl");
   const returnUrl = rawReturnUrl && rawReturnUrl.startsWith("/admin") ? rawReturnUrl : "/admin/dashboard";

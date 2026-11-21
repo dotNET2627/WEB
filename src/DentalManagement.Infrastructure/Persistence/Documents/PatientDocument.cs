@@ -4,6 +4,9 @@ namespace DentalManagement.Infrastructure.Persistence.Documents;
 
 public sealed class PatientDocument : MongoDocument
 {
+    [BsonElement("isDeleted")]
+    public bool IsDeleted { get; init; }
+
     [BsonElement("clinicId")]
     public Guid ClinicId { get; init; }
 
