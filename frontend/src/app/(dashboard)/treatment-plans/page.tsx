@@ -1,5 +1,10 @@
-import { ModulePlaceholder } from "@/components/ui/module-placeholder";
+import { TreatmentPlansView } from "@/features/treatments/TreatmentPlansView";
+
+export const metadata = {
+  title: "Phác đồ điều trị | Dental Care",
+  description: "Khởi tạo và theo dõi phác đồ điều trị dài hạn cho bệnh nhân."
+};
 
 export default function TreatmentPlansPage() {
-  return <ModulePlaceholder title="Phác đồ điều trị" description="Theo dõi hạng mục điều trị, răng và tiến độ thực hiện." />;
+  return <TreatmentPlansView />;
 }
