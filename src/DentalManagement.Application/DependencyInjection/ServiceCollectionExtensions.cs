@@ -66,6 +66,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<DentalManagement.Application.Promotions.Queries.GetDiscountPromoById.GetDiscountPromoByIdQuery, Result<DentalManagement.Application.Promotions.Common.DiscountPromoDto>>, DentalManagement.Application.Promotions.Queries.GetDiscountPromoById.GetDiscountPromoByIdQueryHandler>();
         services.AddScoped<IQueryHandler<DentalManagement.Application.Promotions.Queries.ValidateDiscountPromo.ValidateDiscountPromoQuery, Result<DentalManagement.Application.Promotions.Common.DiscountValidationResultDto>>, DentalManagement.Application.Promotions.Queries.ValidateDiscountPromo.ValidateDiscountPromoQueryHandler>();
 
+        // Treatment Plans Handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Treatments.CreateTreatmentPlan.CreateTreatmentPlanCommand, Result<Guid>>, DentalManagement.Application.Treatments.CreateTreatmentPlan.CreateTreatmentPlanHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Treatments.GetTreatmentPlansByPatient.GetTreatmentPlansByPatientQuery, Result<IReadOnlyList<DentalManagement.Application.Treatments.Common.TreatmentPlanDto>>>, DentalManagement.Application.Treatments.GetTreatmentPlansByPatient.GetTreatmentPlansByPatientHandler>();
+
         return services;
     }
 }
