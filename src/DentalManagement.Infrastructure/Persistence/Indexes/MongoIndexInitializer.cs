@@ -99,5 +99,12 @@ public sealed class MongoIndexInitializer
                 Builders<DoctorDocument>.IndexKeys.Ascending("workSchedules.dayOfWeek"),
                 new CreateIndexOptions { Name = "ix_doctors_work_schedules_day_of_week" }),
             cancellationToken: cancellationToken);
+
+        // Treatment Plans
+        await _context.TreatmentPlans.Indexes.CreateOneAsync(
+            new CreateIndexModel<TreatmentPlanDocument>(
+                Builders<TreatmentPlanDocument>.IndexKeys.Ascending(document => document.PatientId),
+                new CreateIndexOptions { Name = "ix_treatment_plans_patient_id" }),
+            cancellationToken: cancellationToken);
     }
 }

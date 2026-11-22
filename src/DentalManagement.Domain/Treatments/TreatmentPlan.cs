@@ -102,4 +102,35 @@ public sealed class TreatmentPlan : AuditableEntity
         Status = newStatus;
         Touch();
     }
+
+    public static TreatmentPlan Rehydrate(
+        Guid id,
+        Guid patientId,
+        Guid clinicId,
+        string name,
+        decimal estimatedCost,
+        DateTimeOffset startDate,
+        DateTimeOffset? endDate,
+        Guid? doctorId,
+        TreatmentPlanStatus status,
+        string? notes,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
+    {
+        var plan = new TreatmentPlan(
+            id,
+            patientId,
+            clinicId,
+            name,
+            estimatedCost,
+            startDate,
+            endDate,
+            doctorId,
+            notes)
+        {
+            Status = status
+        };
+        plan.SetAuditDates(createdAt, updatedAt);
+        return plan;
+    }
 }
