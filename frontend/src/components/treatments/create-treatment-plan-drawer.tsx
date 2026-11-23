@@ -98,7 +98,6 @@ export function CreateTreatmentPlanDrawer({
       onClose={onClose}
       title="Tạo Phác Đồ Điều Trị Dài Hạn"
       description={`Khởi tạo kế hoạch điều trị cho bệnh nhân: ${patientName || "Đang chọn"}`}
-      size="md"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4">
         <FormField label="Tên phác đồ điều trị" required error={errors.name}>
@@ -120,7 +119,7 @@ export function CreateTreatmentPlanDrawer({
             <option value="">-- Chọn bác sĩ phụ trách --</option>
             {doctors.map((doc) => (
               <option key={doc.id} value={doc.id}>
-                {doc.fullName} ({doc.specialty || "Nha sĩ"})
+                {doc.doctorName || doc.email || "Bác sĩ"} ({doc.specialty || "Nha sĩ"})
               </option>
             ))}
           </select>

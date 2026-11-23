@@ -10,7 +10,8 @@ import type { Doctor } from "@/types/doctor";
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { StatusTag } from "@/components/ui/status-tag";
 import { CreateTreatmentPlanDrawer } from "@/components/treatments/create-treatment-plan-drawer";
-import { Plus, ClipboardList, User } from "lucide-react";
+import { TreatmentStepsManager } from "@/components/treatments/treatment-steps-manager";
+import { Plus, ClipboardList, User, Layers } from "lucide-react";
 
 export function TreatmentPlansView() {
   const [patients, setPatients] = useState<PatientListItem[]>([]);
@@ -19,6 +20,7 @@ export function TreatmentPlansView() {
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activePlanForSteps, setActivePlanForSteps] = useState<TreatmentPlan | null>(null);
 
   // Load danh sách bệnh nhân và bác sĩ ban đầu
   useEffect(() => {
@@ -32,8 +34,8 @@ export function TreatmentPlansView() {
           setPatients(patientsRes.items);
           setSelectedPatientId(patientsRes.items[0].id);
         }
-        if (doctorsRes?.data) {
-          setDoctors(doctorsRes.data);
+        if (doctorsRes?.items) {
+          setDoctors(doctorsRes.items);
         }
       } catch (err) {
         console.error("Lỗi tải danh sách ban đầu:", err);
@@ -66,7 +68,7 @@ export function TreatmentPlansView() {
   const getDoctorName = (doctorId?: string | null) => {
     if (!doctorId) return "Chưa chỉ định";
     const doc = doctors.find((d) => d.id === doctorId);
-    return doc ? doc.fullName : doctorId;
+    return doc ? (doc.doctorName || doc.email || "Bác sĩ") : doctorId;
   };
 
   const getStatusVariant = (status: string) => {
@@ -131,8 +133,21 @@ export function TreatmentPlansView() {
       header: "Trạng thái",
       render: (row) => {
         const { label, variant } = getStatusVariant(row.status);
-        return <StatusTag label={label} variant={variant} />;
+        return <StatusTag variant={variant}>{label}</StatusTag>;
       }
+    },
+    {
+      key: "actions",
+      header: "Giai đoạn & Tiến trình",
+      render: (row) => (
+        <button
+          onClick={() => setActivePlanForSteps(row)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition shadow-2xs"
+        >
+          <Layers className="h-3.5 w-3.5 text-blue-600" />
+          Xem Giai Đoạn (Kanban/Timeline)
+        </button>
+      )
     }
   ];
 
@@ -196,9 +211,10 @@ export function TreatmentPlansView() {
         <DataTable
           columns={columns}
           data={plans}
-          loading={loading}
+          isLoading={loading}
           keyExtractor={(row) => row.id}
-          emptyMessage="Bệnh nhân này chưa có phác đồ điều trị dài hạn nào. Hãy tạo mới phác đồ đầu tiên!"
+          emptyTitle="Chưa có phác đồ điều trị"
+          emptyDescription="Bệnh nhân này chưa có phác đồ điều trị dài hạn nào. Hãy tạo mới phác đồ đầu tiên!"
         />
       </div>
 
@@ -211,6 +227,15 @@ export function TreatmentPlansView() {
           patientName={selectedPatient?.fullName}
           doctors={doctors}
           onSuccess={loadPlans}
+        />
+      )}
+
+      {/* Modal Quản lý Hạng mục & Giai đoạn Điều trị (Kanban / Timeline) */}
+      {activePlanForSteps && (
+        <TreatmentStepsManager
+          plan={activePlanForSteps}
+          doctors={doctors}
+          onClose={() => setActivePlanForSteps(null)}
         />
       )}
     </div>
