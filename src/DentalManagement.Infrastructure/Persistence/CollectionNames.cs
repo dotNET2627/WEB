@@ -9,6 +9,7 @@ public static class CollectionNames
     public const string Doctors = "doctors";
     public const string Appointments = "appointments";
     public const string TreatmentPlans = "treatmentPlans";
+    public const string TreatmentSteps = "treatmentSteps";
     public const string Services = "services";
     public const string MedicalImages = "medicalImages";
     public const string InventoryItems = "inventoryItems";
