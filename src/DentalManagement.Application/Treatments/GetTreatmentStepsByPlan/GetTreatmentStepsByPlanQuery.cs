@@ -1,0 +1,3 @@
+namespace DentalManagement.Application.Treatments.GetTreatmentStepsByPlan;
+
+public sealed record GetTreatmentStepsByPlanQuery(Guid TreatmentPlanId);
