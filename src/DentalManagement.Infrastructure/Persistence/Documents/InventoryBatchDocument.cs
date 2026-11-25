@@ -18,4 +18,7 @@ public sealed class InventoryBatchDocument : MongoDocument
 
     [BsonElement("quantityOnHand")]
     public int QuantityOnHand { get; init; }
+
+    [BsonElement("unitCost")]
+    public decimal UnitCost { get; init; }
 }
