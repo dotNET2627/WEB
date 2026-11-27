@@ -29,6 +29,16 @@ public sealed class MongoDoctorRepository : IDoctorRepository
         return document is null ? null : DoctorDocumentMapper.ToDomain(document);
     }
 
+    public async Task<IReadOnlyList<Doctor>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    {
+        var doctorIds = ids.Distinct().ToArray();
+        if (doctorIds.Length == 0) return [];
+
+        var filter = Builders<DoctorDocument>.Filter.In(doctor => doctor.Id, doctorIds);
+        var documents = await _context.Doctors.Find(filter).ToListAsync(cancellationToken);
+        return documents.Select(DoctorDocumentMapper.ToDomain).ToArray();
+    }
+
     public async Task<Doctor?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var document = await _context.Doctors

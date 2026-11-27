@@ -62,6 +62,27 @@ public sealed class MongoAppointmentRepository : IAppointmentRepository
         return documents.Select(AppointmentDocumentMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<Appointment>> GetByClinicAndDateAsync(
+        Guid clinicId,
+        DateOnly date,
+        CancellationToken cancellationToken)
+    {
+        var from = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(7)).ToUniversalTime();
+        var to = from.AddDays(1);
+
+        var builder = Builders<AppointmentDocument>.Filter;
+        var filter = builder.And(
+            builder.Eq(d => d.ClinicId, clinicId),
+            builder.Gte(d => d.StartsAt, from),
+            builder.Lt(d => d.StartsAt, to));
+
+        var documents = _sessionAccessor.Current is { } session
+            ? await _context.Appointments.Find(session, filter).SortBy(d => d.StartsAt).ToListAsync(cancellationToken)
+            : await _context.Appointments.Find(filter).SortBy(d => d.StartsAt).ToListAsync(cancellationToken);
+
+        return documents.Select(AppointmentDocumentMapper.ToDomain).ToList();
+    }
+
     public async Task<bool> HasDoctorConflictAsync(
         Guid doctorId,
         DateTimeOffset startsAt,

@@ -14,6 +14,7 @@ interface NavItem {
 const allItems: NavItem[] = [
   { href: "/dashboard", label: "Tổng quan" },
   { href: "/doctor/workspace", label: "Bàn khám bác sĩ", requiredRole: ["doctor", "superadmin", "clinicadmin", "admin"] },
+  { href: "/reception", label: "Tiếp đón & Check-in" },
   { href: "/patients", label: "Bệnh nhân" },
   { href: "/appointments", label: "Lịch hẹn" },
   { href: "/treatment-plans", label: "Phác đồ điều trị" },
@@ -25,6 +26,8 @@ const allItems: NavItem[] = [
   { href: "/clinics", label: "Chi nhánh" },
   { href: "/inventory", label: "Kho vật tư" },
   { href: "/insurance", label: "Bảo hiểm" },
+  { href: "/reports/financial", label: "Báo cáo tài chính" },
+  { href: "/cashier-shifts", label: "Chốt ca thu ngân" },
   { href: "/settings", label: "Thiết lập" }
 ];
 

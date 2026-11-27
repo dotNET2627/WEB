@@ -23,7 +23,7 @@ public sealed class UpdateAppointmentHandler
         CancellationToken cancellationToken)
     {
         var appointment = await _appointments.GetByIdAsync(command.AppointmentId, cancellationToken);
-        if (appointment is null)
+        if (appointment is null || appointment.ClinicId != command.ClinicId)
         {
             return Result.Failure("appointment.not_found",
                 $"Không tìm thấy lịch hẹn với id '{command.AppointmentId}'.");

@@ -111,6 +111,34 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<ChangeTreatmentStepStatusCommand, Result<bool>>, ChangeTreatmentStepStatusHandler>();
         services.AddScoped<ICommandHandler<DeleteTreatmentStepCommand, Result<bool>>, DeleteTreatmentStepHandler>();
 
+        // Invoice handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.CreateInvoice.CreateInvoiceCommand, Result<Guid>>, DentalManagement.Application.Invoices.CreateInvoice.CreateInvoiceHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.GetInvoice.GetInvoiceQuery, Result<DentalManagement.Application.Invoices.GetInvoice.InvoiceDto>>, DentalManagement.Application.Invoices.GetInvoice.GetInvoiceHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.ListInvoices.ListInvoicesQuery, Result<IReadOnlyList<DentalManagement.Application.Invoices.ListInvoices.InvoiceSummaryDto>>>, DentalManagement.Application.Invoices.ListInvoices.ListInvoicesHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.RecordPayment.RecordPaymentCommand, Result>, DentalManagement.Application.Invoices.RecordPayment.RecordPaymentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceCommand, Result>, DentalManagement.Application.Invoices.CancelInvoice.CancelInvoiceHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrQuery, Result<DentalManagement.Application.Invoices.VietQr.InvoiceVietQrDto>>, DentalManagement.Application.Invoices.VietQr.GetInvoiceVietQrHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Invoices.Reports.GetFinancialReport.GetFinancialReportQuery, Result<DentalManagement.Application.Invoices.Reports.GetFinancialReport.FinancialReportDto>>, DentalManagement.Application.Invoices.Reports.GetFinancialReport.GetFinancialReportHandler>();
+
+        // Insurance Claim handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Insurance.CreateClaim.CreateInsuranceClaimCommand, Result<Guid>>, DentalManagement.Application.Insurance.CreateClaim.CreateInsuranceClaimHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Insurance.GetClaim.GetInsuranceClaimQuery, Result<DentalManagement.Application.Insurance.GetClaim.InsuranceClaimDto>>, DentalManagement.Application.Insurance.GetClaim.GetInsuranceClaimHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Insurance.ListClaims.ListInsuranceClaimsQuery, Result<IReadOnlyList<DentalManagement.Application.Insurance.ListClaims.InsuranceClaimSummaryDto>>>, DentalManagement.Application.Insurance.ListClaims.ListInsuranceClaimsHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Insurance.UpdateClaimStatus.UpdateInsuranceClaimStatusCommand, Result>, DentalManagement.Application.Insurance.UpdateClaimStatus.UpdateInsuranceClaimStatusHandler>();
+
+        // Cashier Shift handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Billing.Shifts.OpenShift.OpenCashierShiftCommand, Result<Guid>>, DentalManagement.Application.Billing.Shifts.OpenShift.OpenCashierShiftHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Billing.Shifts.GetCurrentShift.GetCurrentCashierShiftQuery, Result<DentalManagement.Application.Billing.Shifts.CashierShiftDto?>>, DentalManagement.Application.Billing.Shifts.GetCurrentShift.GetCurrentCashierShiftHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Billing.Shifts.CloseShift.CloseCashierShiftCommand, Result>, DentalManagement.Application.Billing.Shifts.CloseShift.CloseCashierShiftHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Billing.Shifts.ListShifts.ListCashierShiftsQuery, Result<IReadOnlyList<DentalManagement.Application.Billing.Shifts.CashierShiftSummaryDto>>>, DentalManagement.Application.Billing.Shifts.ListShifts.ListCashierShiftsHandler>();
+
+        // Check-in workflow handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentCommand, Result>, DentalManagement.Application.Appointments.CheckInAppointment.CheckInAppointmentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.StartExam.StartExamCommand, Result>, DentalManagement.Application.Appointments.StartExam.StartExamHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.CompleteAppointment.CompleteAppointmentCommand, Result>, DentalManagement.Application.Appointments.CompleteAppointment.CompleteAppointmentHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Appointments.MarkNoShow.MarkNoShowCommand, Result>, DentalManagement.Application.Appointments.MarkNoShow.MarkNoShowHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Appointments.GetTodayAppointments.GetTodayAppointmentsQuery, Result<IReadOnlyList<DentalManagement.Application.Appointments.GetTodayAppointments.TodayAppointmentDto>>>, DentalManagement.Application.Appointments.GetTodayAppointments.GetTodayAppointmentsHandler>();
+
         return services;
     }
 }

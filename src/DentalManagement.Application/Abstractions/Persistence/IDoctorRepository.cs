@@ -6,6 +6,7 @@ namespace DentalManagement.Application.Abstractions.Persistence;
 public interface IDoctorRepository
 {
     Task<Doctor?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Doctor>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken);
     Task<Doctor?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken);
     Task<Doctor?> GetByLicenseNumberAsync(string licenseNumber, CancellationToken cancellationToken);
     Task<bool> LicenseNumberExistsAsync(string licenseNumber, Guid? excludeId, CancellationToken cancellationToken);

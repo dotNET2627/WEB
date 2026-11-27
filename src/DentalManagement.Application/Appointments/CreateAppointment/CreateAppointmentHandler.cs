@@ -9,13 +9,16 @@ public sealed class CreateAppointmentHandler
     : ICommandHandler<CreateAppointmentCommand, Result<Guid>>
 {
     private readonly IAppointmentRepository _appointments;
+    private readonly IPatientRepository _patients;
     private readonly ITransactionRunner _transactionRunner;
 
     public CreateAppointmentHandler(
         IAppointmentRepository appointments,
+        IPatientRepository patients,
         ITransactionRunner transactionRunner)
     {
         _appointments = appointments;
+        _patients = patients;
         _transactionRunner = transactionRunner;
     }
 
@@ -23,6 +26,9 @@ public sealed class CreateAppointmentHandler
         CreateAppointmentCommand command,
         CancellationToken cancellationToken)
     {
+        if (await _patients.GetByIdAsync(command.ClinicId, command.PatientId, cancellationToken) is null)
+            return Result<Guid>.Failure("patient.not_found", "Không tìm thấy bệnh nhân trong phòng khám.");
+
         var domainServices = command.PlannedServices
             .Select(s => new PlannedService(s.ServiceId, s.ServiceName, s.UnitPrice, s.ToothNumber))
             .ToList();

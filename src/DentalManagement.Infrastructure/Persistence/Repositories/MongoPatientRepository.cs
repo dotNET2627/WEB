@@ -54,6 +54,19 @@ public sealed class MongoPatientRepository(
         return new PagedResult<Patient>(documents.Select(PatientDocumentMapper.ToDomain).ToArray(), page, size, total);
     }
 
+    public async Task<IReadOnlyList<Patient>> GetByIdsAsync(
+        Guid clinicId,
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0) return [];
+
+        var filter = Active(clinicId) & Builders<PatientDocument>.Filter.In(d => d.Id, idList);
+        var documents = await context.Patients.Find(filter).ToListAsync(cancellationToken);
+        return documents.Select(PatientDocumentMapper.ToDomain).ToList();
+    }
+
     // Deleted records retain their codes to avoid reassigning an existing medical identity.
     public Task<bool> PatientCodeExistsAsync(Guid clinicId, string patientCode, CancellationToken cancellationToken) =>
         context.Patients.Find(x => x.ClinicId == clinicId && x.PatientCode == patientCode.Trim())

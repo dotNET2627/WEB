@@ -25,8 +25,12 @@ public sealed class AppointmentDocument : MongoDocument
     [BsonElement("reason")]
     public string? Reason { get; init; }
 
+    [BsonElement("checkedInAt")]
+    public DateTimeOffset? CheckedInAt { get; init; }
+
     [BsonElement("plannedServices")]
     public IReadOnlyCollection<PlannedServiceDocument> PlannedServices { get; init; } = [];
+
 }
 
 public sealed record PlannedServiceDocument(Guid ServiceId, string ServiceName, decimal UnitPrice, string? ToothNumber);

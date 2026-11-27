@@ -87,6 +87,8 @@ public sealed class DatabaseSeedHostedService : IHostedService
                     DefaultPermissions.Patients.Create,
                     DefaultPermissions.Appointments.Read,
                     DefaultPermissions.Appointments.Create,
+                    DefaultPermissions.Appointments.CheckIn,
+                    DefaultPermissions.Reception.Read,
                     DefaultPermissions.Invoices.Read,
                     DefaultPermissions.Invoices.Create,
                     DefaultPermissions.Invoices.Pay
@@ -98,6 +100,8 @@ public sealed class DatabaseSeedHostedService : IHostedService
             {
                 receptionistRole.AddPermission(DefaultPermissions.Doctors.Read);
                 receptionistRole.AddPermission(DefaultPermissions.Clinics.Read);
+                receptionistRole.AddPermission(DefaultPermissions.Appointments.CheckIn);
+                receptionistRole.AddPermission(DefaultPermissions.Reception.Read);
                 await roleRepo.UpdateAsync(receptionistRole, cancellationToken);
             }
 

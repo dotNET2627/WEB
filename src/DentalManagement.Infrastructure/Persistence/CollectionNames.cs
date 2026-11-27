@@ -20,6 +20,7 @@ public static class CollectionNames
     public const string DiscountPrograms = "discountPrograms";
     public const string DiscountPromos = "discountPromos";
     public const string InsuranceClaims = "insuranceClaims";
+    public const string CashierShifts = "cashierShifts";
     public const string AuditLogs = "auditLogs";
     public const string RefreshTokens = "refresh_tokens";
     public const string ServiceCategories = "serviceCategories";

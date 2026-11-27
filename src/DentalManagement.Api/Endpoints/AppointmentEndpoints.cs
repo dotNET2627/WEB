@@ -1,10 +1,14 @@
 using DentalManagement.Api.Extensions;
 using DentalManagement.Application.Abstractions.Services;
 using DentalManagement.Application.Appointments.CancelAppointment;
+using DentalManagement.Application.Appointments.CheckInAppointment;
+using DentalManagement.Application.Appointments.CompleteAppointment;
 using DentalManagement.Application.Appointments.ConfirmAppointment;
 using DentalManagement.Application.Appointments.CreateAppointment;
 using DentalManagement.Application.Appointments.GetAppointment;
 using DentalManagement.Application.Appointments.ListAppointments;
+using DentalManagement.Application.Appointments.MarkNoShow;
+using DentalManagement.Application.Appointments.StartExam;
 using DentalManagement.Application.Appointments.UpdateAppointment;
 using DentalManagement.Application.Common;
 using DentalManagement.Application.Security;
@@ -61,6 +65,7 @@ public static class AppointmentEndpoints
                 var error = result.Error!;
                 return error.Code switch
                 {
+                    "patient.not_found" => Results.Problem(statusCode: StatusCodes.Status404NotFound, detail: error.Message),
                     "appointment.conflict" => Results.Problem(
                         statusCode: StatusCodes.Status409Conflict,
                         title: "Trùng lịch hẹn",
@@ -91,7 +96,7 @@ public static class AppointmentEndpoints
             IQueryHandler<GetAppointmentQuery, Result<AppointmentDto>> handler,
             CancellationToken cancellationToken) =>
         {
-            var result = await handler.Handle(new GetAppointmentQuery(id), cancellationToken);
+            var result = await handler.Handle(new GetAppointmentQuery(user.ClinicId!.Value, id), cancellationToken);
 
             if (result.IsFailure)
             {
@@ -99,15 +104,6 @@ public static class AppointmentEndpoints
                     statusCode: StatusCodes.Status404NotFound,
                     title: "Không tìm thấy lịch hẹn",
                     detail: result.Error!.Message);
-            }
-
-            // Cách ly đa chi nhánh: ngăn chặn xem lịch hẹn của phòng khám khác
-            if (result.Value!.ClinicId != user.ClinicId!.Value)
-            {
-                return Results.Problem(
-                    statusCode: StatusCodes.Status404NotFound,
-                    title: "Không tìm thấy lịch hẹn",
-                    detail: "Lịch hẹn không thuộc phòng khám đang làm việc.");
             }
 
             return Results.Ok(result.Value);
@@ -149,11 +145,12 @@ public static class AppointmentEndpoints
         group.MapPut("/{id:guid}", async (
             Guid id,
             RescheduleAppointmentRequest request,
+            [FromServices] ICurrentUser user,
             ICommandHandler<UpdateAppointmentCommand, Result> handler,
             IValidator<UpdateAppointmentCommand> validator,
             CancellationToken cancellationToken) =>
         {
-            var command = new UpdateAppointmentCommand(id, request.StartsAt, request.EndsAt, request.Reason);
+            var command = new UpdateAppointmentCommand(user.ClinicId!.Value, id, request.StartsAt, request.EndsAt, request.Reason);
 
             var validationResult = await validator.ValidateAsync(command, cancellationToken);
             if (!validationResult.IsValid)
@@ -190,12 +187,13 @@ public static class AppointmentEndpoints
         .ProducesProblem(StatusCodes.Status409Conflict);
 
         // 5. Confirm Appointment (Xác nhận lịch hẹn)
-        group.MapPut("/{id:guid}/confirm", async (
+        group.MapMethods("/{id:guid}/confirm", [HttpMethods.Put, HttpMethods.Patch], async (
             Guid id,
+            [FromServices] ICurrentUser user,
             ICommandHandler<ConfirmAppointmentCommand, Result> handler,
             CancellationToken cancellationToken) =>
         {
-            var command = new ConfirmAppointmentCommand(id);
+            var command = new ConfirmAppointmentCommand(user.ClinicId!.Value, id);
             var result = await handler.Handle(command, cancellationToken);
             if (result.IsFailure)
             {
@@ -222,13 +220,13 @@ public static class AppointmentEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound);
 
         // 6. Cancel Appointment (Hủy lịch hẹn)
-        group.MapPut("/{id:guid}/cancel", async (
+        group.MapMethods("/{id:guid}/cancel", [HttpMethods.Put, HttpMethods.Patch], async (
             Guid id,
-            CancelAppointmentRequest? request,
+            [FromServices] ICurrentUser user,
             ICommandHandler<CancelAppointmentCommand, Result> handler,
             CancellationToken cancellationToken) =>
         {
-            var command = new CancelAppointmentCommand(id);
+            var command = new CancelAppointmentCommand(user.ClinicId!.Value, id);
             var result = await handler.Handle(command, cancellationToken);
             if (result.IsFailure)
             {
@@ -254,8 +252,84 @@ public static class AppointmentEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound);
 
+        // 5. Check-in (Confirmed → CheckedIn)
+        group.MapPatch("/{id:guid}/check-in", async (
+            Guid id,
+            [FromServices] ICurrentUser user,
+            ICommandHandler<CheckInAppointmentCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new CheckInAppointmentCommand(user.ClinicId!.Value, id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("CheckInAppointment")
+        .RequireAuthorization(DefaultPermissions.Appointments.CheckIn);
+
+        // 6. Start Exam (CheckedIn → InProgress)
+        group.MapPatch("/{id:guid}/start-exam", async (
+            Guid id,
+            [FromServices] ICurrentUser user,
+            ICommandHandler<StartExamCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new StartExamCommand(user.ClinicId!.Value, id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("StartExam")
+        .RequireAuthorization(DefaultPermissions.Appointments.CheckIn);
+
+        // 7. Complete (InProgress → Completed)
+        group.MapPatch("/{id:guid}/complete", async (
+            Guid id,
+            [FromServices] ICurrentUser user,
+            ICommandHandler<CompleteAppointmentCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new CompleteAppointmentCommand(user.ClinicId!.Value, id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("CompleteAppointment")
+        .RequireAuthorization(DefaultPermissions.Appointments.CheckIn);
+
+        // 8. No-Show (Confirmed/CheckedIn → NoShow)
+        group.MapPatch("/{id:guid}/no-show", async (
+            Guid id,
+            [FromServices] ICurrentUser user,
+            ICommandHandler<MarkNoShowCommand, Result> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new MarkNoShowCommand(user.ClinicId!.Value, id), cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapStatusError(result.Error!);
+        })
+        .WithName("MarkNoShow")
+        .RequireAuthorization(DefaultPermissions.Appointments.CheckIn);
+
         return endpoints;
     }
+
+    private static IResult MapStatusError(DentalManagement.Domain.Common.Error error) =>
+        error.Code switch
+        {
+            "appointment.not_found" => Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Không tìm thấy lịch hẹn",
+                detail: error.Message),
+            "appointment.invalid_state" => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "Trạng thái không hợp lệ",
+                detail: error.Message),
+            _ => Results.Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                detail: error.Message)
+        };
 }
 
 public sealed record CreateAppointmentRequest(
@@ -277,5 +351,3 @@ public sealed record RescheduleAppointmentRequest(
     DateTimeOffset StartsAt,
     DateTimeOffset? EndsAt,
     string? Reason);
-
-public sealed record CancelAppointmentRequest(string? Reason = null);

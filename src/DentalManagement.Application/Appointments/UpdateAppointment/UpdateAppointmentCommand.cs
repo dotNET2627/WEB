@@ -7,6 +7,7 @@ namespace DentalManagement.Application.Appointments.UpdateAppointment;
 /// PlannedServices are intentionally immutable after booking — create a new appointment to change services.
 /// </summary>
 public sealed record UpdateAppointmentCommand(
+    Guid ClinicId,
     Guid AppointmentId,
     DateTimeOffset StartsAt,
     DateTimeOffset? EndsAt,

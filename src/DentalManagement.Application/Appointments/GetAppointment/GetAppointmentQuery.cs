@@ -3,7 +3,7 @@ using DentalManagement.Domain.Appointments;
 
 namespace DentalManagement.Application.Appointments.GetAppointment;
 
-public sealed record GetAppointmentQuery(Guid AppointmentId);
+public sealed record GetAppointmentQuery(Guid ClinicId, Guid AppointmentId);
 
 public sealed record AppointmentDto(
     Guid Id,

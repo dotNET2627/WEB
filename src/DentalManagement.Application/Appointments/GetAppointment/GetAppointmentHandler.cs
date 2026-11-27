@@ -20,7 +20,7 @@ public sealed class GetAppointmentHandler
     {
         var appointment = await _appointments.GetByIdAsync(query.AppointmentId, cancellationToken);
 
-        if (appointment is null)
+        if (appointment is null || appointment.ClinicId != query.ClinicId)
         {
             return Result<AppointmentDto>.Failure(
                 "appointment.not_found",

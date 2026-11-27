@@ -18,6 +18,13 @@ internal sealed class FakePatientRepository : IPatientRepository
     public Task<Patient?> GetByIdAsync(Guid clinicId, Guid id, CancellationToken cancellationToken) =>
         Task.FromResult(Patients.FirstOrDefault(patient => patient.Id == id && patient.ClinicId == clinicId));
 
+    public Task<IReadOnlyList<Patient>> GetByIdsAsync(Guid clinicId, IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    {
+        var patientIds = ids.ToHashSet();
+        return Task.FromResult<IReadOnlyList<Patient>>(Patients.Where(patient =>
+            patient.ClinicId == clinicId && patientIds.Contains(patient.Id)).ToList());
+    }
+
     public Task<bool> PatientCodeExistsAsync(Guid clinicId, string patientCode, CancellationToken cancellationToken) =>
         Task.FromResult(Patients.Any(patient =>
             patient.ClinicId == clinicId && patient.PatientCode == patientCode.Trim()));

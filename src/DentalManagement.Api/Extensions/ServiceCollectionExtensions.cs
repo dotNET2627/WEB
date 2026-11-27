@@ -116,6 +116,11 @@ public static class ServiceCollectionExtensions
         services.AddValidatorsFromAssemblyContaining<Program>();
         services.AddScoped(typeof(ValidationFilter<>));
 
+        // VietQR Options
+        var vietQrOptions = configuration.GetSection(DentalManagement.Application.Invoices.VietQr.VietQrOptions.SectionName)
+            .Get<DentalManagement.Application.Invoices.VietQr.VietQrOptions>() ?? new DentalManagement.Application.Invoices.VietQr.VietQrOptions();
+        services.AddSingleton(vietQrOptions);
+
         // Data Seeder HostedService
         services.AddHostedService<DatabaseSeedHostedService>();
 
