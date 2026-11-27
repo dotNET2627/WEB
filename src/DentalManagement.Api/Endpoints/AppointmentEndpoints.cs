@@ -77,15 +77,12 @@ public static class AppointmentEndpoints
                 };
             }
 
-            return Results.Created($"/api/v1/appointments/{result.Value}", new
-            {
-                id = result.Value,
-                message = "Đặt lịch hẹn thành công."
-            });
+            return Results.Created($"/api/v1/appointments/{result.Value}",
+                new AppointmentCreatedResponse(result.Value, "Đặt lịch hẹn thành công."));
         })
         .WithName("CreateAppointment")
         .RequireAuthorization(DefaultPermissions.Appointments.Create)
-        .Produces(StatusCodes.Status201Created)
+        .Produces<AppointmentCreatedResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict);
 
@@ -187,7 +184,7 @@ public static class AppointmentEndpoints
         .ProducesProblem(StatusCodes.Status409Conflict);
 
         // 5. Confirm Appointment (Xác nhận lịch hẹn)
-        group.MapMethods("/{id:guid}/confirm", [HttpMethods.Put, HttpMethods.Patch], async (
+        group.MapMethods("/{id:guid}/confirm", [HttpMethods.Put, HttpMethods.Patch, HttpMethods.Post], async (
             Guid id,
             [FromServices] ICurrentUser user,
             ICommandHandler<ConfirmAppointmentCommand, Result> handler,
@@ -220,7 +217,7 @@ public static class AppointmentEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound);
 
         // 6. Cancel Appointment (Hủy lịch hẹn)
-        group.MapMethods("/{id:guid}/cancel", [HttpMethods.Put, HttpMethods.Patch], async (
+        group.MapMethods("/{id:guid}/cancel", [HttpMethods.Put, HttpMethods.Patch, HttpMethods.Post], async (
             Guid id,
             [FromServices] ICurrentUser user,
             ICommandHandler<CancelAppointmentCommand, Result> handler,
@@ -351,3 +348,5 @@ public sealed record RescheduleAppointmentRequest(
     DateTimeOffset StartsAt,
     DateTimeOffset? EndsAt,
     string? Reason);
+
+public sealed record AppointmentCreatedResponse(Guid Id, string Message);

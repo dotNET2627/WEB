@@ -252,6 +252,12 @@ public static class DoctorEndpoints
             ICommandHandler<DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.SetDoctorWorkSchedulesCommand, Result<IReadOnlyList<WorkScheduleDto>>> handler,
             CancellationToken cancellationToken) =>
         {
+            if (request.Schedules is null)
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    [nameof(request.Schedules)] = ["Danh sách ca trực là bắt buộc."]
+                });
+
             var command = new DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.SetDoctorWorkSchedulesCommand(
                 id,
                 request.Schedules);
@@ -351,4 +357,4 @@ public sealed record AssignScheduleRequest(
     bool IsActive = true);
 
 public sealed record SetSchedulesRequest(
-    IEnumerable<DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.WorkScheduleInputDto> Schedules);
+    IEnumerable<DentalManagement.Application.Doctors.Commands.SetDoctorWorkSchedules.WorkScheduleInputDto>? Schedules);
