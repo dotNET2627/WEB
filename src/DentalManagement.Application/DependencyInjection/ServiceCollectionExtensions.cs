@@ -55,6 +55,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandHandler<DentalManagement.Application.Clinics.Commands.UpdateClinic.UpdateClinicCommand, Result<DentalManagement.Application.Clinics.Dtos.ClinicDto>>, DentalManagement.Application.Clinics.Commands.UpdateClinic.UpdateClinicCommandHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Clinics.Commands.DeleteClinic.DeleteClinicCommand, Result>, DentalManagement.Application.Clinics.Commands.DeleteClinic.DeleteClinicCommandHandler>();
 
+        // Inventory Handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Inventory.Items.CreateInventoryItem.CreateInventoryItemCommand, Result<Guid>>, DentalManagement.Application.Inventory.Items.CreateInventoryItem.CreateInventoryItemHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Inventory.Items.UpdateInventoryItem.UpdateInventoryItemCommand, Result>, DentalManagement.Application.Inventory.Items.UpdateInventoryItem.UpdateInventoryItemHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Inventory.Items.ListInventoryItems.ListInventoryItemsQuery, Result<IReadOnlyList<DentalManagement.Application.Inventory.Items.ListInventoryItems.InventoryItemDto>>>, DentalManagement.Application.Inventory.Items.ListInventoryItems.ListInventoryItemsHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Inventory.Batches.ReceiveInventoryBatch.ReceiveInventoryBatchCommand, Result<Guid>>, DentalManagement.Application.Inventory.Batches.ReceiveInventoryBatch.ReceiveInventoryBatchHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Inventory.Batches.ListInventoryBatches.ListInventoryBatchesQuery, Result<IReadOnlyList<DentalManagement.Application.Inventory.Batches.ListInventoryBatches.InventoryBatchDto>>>, DentalManagement.Application.Inventory.Batches.ListInventoryBatches.ListInventoryBatchesHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Inventory.Batches.ConsumeStockFefo.ConsumeStockFefoCommand, Result<IReadOnlyList<DentalManagement.Application.Inventory.Batches.ConsumeStockFefo.BatchConsumptionResultDto>>>, DentalManagement.Application.Inventory.Batches.ConsumeStockFefo.ConsumeStockFefoHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Inventory.Transactions.ListInventoryTransactions.ListInventoryTransactionsQuery, Result<IReadOnlyList<DentalManagement.Application.Inventory.Transactions.ListInventoryTransactions.InventoryTransactionDto>>>, DentalManagement.Application.Inventory.Transactions.ListInventoryTransactions.ListInventoryTransactionsHandler>();
+
         return services;
     }
 }

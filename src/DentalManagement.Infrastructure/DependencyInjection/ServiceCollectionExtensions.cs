@@ -62,6 +62,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IClinicRepository, MongoClinicRepository>();
         services.AddScoped<IDoctorRepository, MongoDoctorRepository>();
         services.AddScoped<IAppointmentRepository, MongoAppointmentRepository>();
+        services.AddScoped<IInventoryItemRepository, MongoInventoryItemRepository>();
+        services.AddScoped<IInventoryBatchRepository, MongoInventoryBatchRepository>();
+        services.AddScoped<IInventoryTransactionRepository, MongoInventoryTransactionRepository>();
         services.AddScoped<ITransactionRunner, MongoTransactionRunner>();
 
         // Local disk file storage for medical images (Storage:RootPath, default storage/medical-images).
