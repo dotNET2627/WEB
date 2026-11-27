@@ -17,6 +17,8 @@ const allItems: NavItem[] = [
   { href: "/patients", label: "Bệnh nhân" },
   { href: "/appointments", label: "Lịch hẹn" },
   { href: "/treatment-plans", label: "Phác đồ điều trị" },
+  { href: "/services", label: "Danh mục dịch vụ" },
+  { href: "/promotions", label: "Khuyến mãi" },
   { href: "/prescriptions", label: "Đơn thuốc" },
   { href: "/invoices", label: "Hóa đơn & Thu ngân" },
   { href: "/doctors", label: "Bác sĩ & Ca trực" },

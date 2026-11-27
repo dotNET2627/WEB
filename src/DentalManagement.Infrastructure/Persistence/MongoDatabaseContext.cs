@@ -31,6 +31,8 @@ public sealed class MongoDatabaseContext
     public IMongoCollection<PatientDocument> Patients => Database.GetCollection<PatientDocument>(CollectionNames.Patients);
     public IMongoCollection<MedicalImageDocument> MedicalImages => Database.GetCollection<MedicalImageDocument>(CollectionNames.MedicalImages);
     public IMongoCollection<AppointmentDocument> Appointments => Database.GetCollection<AppointmentDocument>(CollectionNames.Appointments);
+    public IMongoCollection<TreatmentPlanDocument> TreatmentPlans => Database.GetCollection<TreatmentPlanDocument>(CollectionNames.TreatmentPlans);
+    public IMongoCollection<TreatmentStepDocument> TreatmentSteps => Database.GetCollection<TreatmentStepDocument>(CollectionNames.TreatmentSteps);
     public IMongoCollection<InvoiceDocument> Invoices => Database.GetCollection<InvoiceDocument>(CollectionNames.Invoices);
     public IMongoCollection<InventoryItemDocument> InventoryItems => Database.GetCollection<InventoryItemDocument>(CollectionNames.InventoryItems);
     public IMongoCollection<InventoryBatchDocument> InventoryBatches => Database.GetCollection<InventoryBatchDocument>(CollectionNames.InventoryBatches);
@@ -38,6 +40,9 @@ public sealed class MongoDatabaseContext
     public IMongoCollection<UserDocument> Users => Database.GetCollection<UserDocument>(CollectionNames.Users);
     public IMongoCollection<RoleDocument> Roles => Database.GetCollection<RoleDocument>(CollectionNames.Roles);
     public IMongoCollection<RefreshTokenDocument> RefreshTokens => Database.GetCollection<RefreshTokenDocument>(CollectionNames.RefreshTokens);
+    public IMongoCollection<ServiceDocument> Services => Database.GetCollection<ServiceDocument>(CollectionNames.Services);
+    public IMongoCollection<ServiceCategoryDocument> ServiceCategories => Database.GetCollection<ServiceCategoryDocument>(CollectionNames.ServiceCategories);
+    public IMongoCollection<DiscountPromoDocument> DiscountPromos => Database.GetCollection<DiscountPromoDocument>(CollectionNames.DiscountPromos);
     public IMongoCollection<BsonDocument> AuditLogs => Database.GetCollection<BsonDocument>(CollectionNames.AuditLogs);
 
     public IMongoCollection<TDocument> GetCollection<TDocument>(string collectionName) =>

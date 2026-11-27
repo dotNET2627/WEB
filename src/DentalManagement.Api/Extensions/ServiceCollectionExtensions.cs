@@ -1,10 +1,12 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using DentalManagement.Api.Filters;
 using DentalManagement.Api.HostedServices;
 using DentalManagement.Api.Security;
 using DentalManagement.Api.Services;
 using DentalManagement.Application.Abstractions.Services;
+using DentalManagement.Domain.Treatments;
 using DentalManagement.Infrastructure.Security;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -22,6 +24,11 @@ public static class ServiceCollectionExtensions
         IWebHostEnvironment environment)
     {
         services.AddProblemDetails();
+        services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<TreatmentPlanStatus>(allowIntegerValues: false));
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<TreatmentStepStatus>(allowIntegerValues: false));
+        });
         services.AddHttpContextAccessor();
 
         // Current User Abstraction

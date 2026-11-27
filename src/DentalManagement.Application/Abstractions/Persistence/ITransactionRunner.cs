@@ -20,3 +20,18 @@ public interface ITransactionRunner
     Task<T> RunAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken cancellationToken) =>
         ExecuteAsync(action, cancellationToken);
 }
+
+public static class TransactionRunnerExtensions
+{
+    public static Task RunAsync(
+        this ITransactionRunner runner,
+        Func<Task> action,
+        CancellationToken cancellationToken = default) =>
+        runner.ExecuteAsync(_ => action(), cancellationToken);
+
+    public static Task<T> RunAsync<T>(
+        this ITransactionRunner runner,
+        Func<Task<T>> action,
+        CancellationToken cancellationToken = default) =>
+        runner.ExecuteAsync(_ => action(), cancellationToken);
+}

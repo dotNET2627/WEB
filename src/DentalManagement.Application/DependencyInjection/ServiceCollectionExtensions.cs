@@ -1,3 +1,13 @@
+using DentalManagement.Application.Catalog.Commands.CreateDentalService;
+using DentalManagement.Application.Catalog.Commands.CreateServiceCategory;
+using DentalManagement.Application.Catalog.Commands.DeleteDentalService;
+using DentalManagement.Application.Catalog.Commands.ToggleDentalServiceStatus;
+using DentalManagement.Application.Catalog.Commands.UpdateDentalService;
+using DentalManagement.Application.Catalog.Common;
+using DentalManagement.Application.Catalog.Queries.GetActiveDentalServices;
+using DentalManagement.Application.Catalog.Queries.GetDentalServiceById;
+using DentalManagement.Application.Catalog.Queries.GetDentalServicesPaged;
+using DentalManagement.Application.Catalog.Queries.GetServiceCategories;
 using DentalManagement.Application.Common;
 using DentalManagement.Application.Identity.Commands.Login;
 using DentalManagement.Application.Identity.Commands.RefreshToken;
@@ -5,6 +15,12 @@ using DentalManagement.Application.Identity.Commands.RevokeToken;
 using DentalManagement.Application.Identity.Commands.SwitchClinic;
 using DentalManagement.Application.Identity.Queries.GetCurrentUser;
 using DentalManagement.Application.Patients;
+using DentalManagement.Application.Treatments.ChangeTreatmentStepStatus;
+using DentalManagement.Application.Treatments.Common;
+using DentalManagement.Application.Treatments.CreateTreatmentStep;
+using DentalManagement.Application.Treatments.DeleteTreatmentStep;
+using DentalManagement.Application.Treatments.GetTreatmentStepsByPlan;
+using DentalManagement.Application.Treatments.UpdateTreatmentStep;
 using DentalManagement.Domain.Common;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,6 +79,37 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQueryHandler<DentalManagement.Application.Inventory.Batches.ListInventoryBatches.ListInventoryBatchesQuery, Result<IReadOnlyList<DentalManagement.Application.Inventory.Batches.ListInventoryBatches.InventoryBatchDto>>>, DentalManagement.Application.Inventory.Batches.ListInventoryBatches.ListInventoryBatchesHandler>();
         services.AddScoped<ICommandHandler<DentalManagement.Application.Inventory.Batches.ConsumeStockFefo.ConsumeStockFefoCommand, Result<IReadOnlyList<DentalManagement.Application.Inventory.Batches.ConsumeStockFefo.BatchConsumptionResultDto>>>, DentalManagement.Application.Inventory.Batches.ConsumeStockFefo.ConsumeStockFefoHandler>();
         services.AddScoped<IQueryHandler<DentalManagement.Application.Inventory.Transactions.ListInventoryTransactions.ListInventoryTransactionsQuery, Result<IReadOnlyList<DentalManagement.Application.Inventory.Transactions.ListInventoryTransactions.InventoryTransactionDto>>>, DentalManagement.Application.Inventory.Transactions.ListInventoryTransactions.ListInventoryTransactionsHandler>();
+
+        // Catalog / Services Handlers
+        services.AddScoped<ICommandHandler<CreateDentalServiceCommand, Result<Guid>>, CreateDentalServiceCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateDentalServiceCommand, Result>, UpdateDentalServiceCommandHandler>();
+        services.AddScoped<ICommandHandler<ToggleDentalServiceStatusCommand, Result>, ToggleDentalServiceStatusCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteDentalServiceCommand, Result>, DeleteDentalServiceCommandHandler>();
+        services.AddScoped<ICommandHandler<CreateServiceCategoryCommand, Result<Guid>>, CreateServiceCategoryCommandHandler>();
+
+        services.AddScoped<IQueryHandler<GetDentalServicesPagedQuery, Result<PagedResult<DentalServiceDto>>>, GetDentalServicesPagedQueryHandler>();
+        services.AddScoped<IQueryHandler<GetDentalServiceByIdQuery, Result<DentalServiceDto>>, GetDentalServiceByIdQueryHandler>();
+        services.AddScoped<IQueryHandler<GetActiveDentalServicesQuery, Result<IReadOnlyList<DentalServiceDto>>>, GetActiveDentalServicesQueryHandler>();
+        services.AddScoped<IQueryHandler<GetServiceCategoriesQuery, Result<IReadOnlyList<ServiceCategoryDto>>>, GetServiceCategoriesQueryHandler>();
+
+        // Promotions / Discounts Handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Promotions.Commands.CreateDiscountPromo.CreateDiscountPromoCommand, Result<Guid>>, DentalManagement.Application.Promotions.Commands.CreateDiscountPromo.CreateDiscountPromoCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Promotions.Commands.UpdateDiscountPromo.UpdateDiscountPromoCommand, Result>, DentalManagement.Application.Promotions.Commands.UpdateDiscountPromo.UpdateDiscountPromoCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Promotions.Commands.ToggleDiscountPromoStatus.ToggleDiscountPromoStatusCommand, Result>, DentalManagement.Application.Promotions.Commands.ToggleDiscountPromoStatus.ToggleDiscountPromoStatusCommandHandler>();
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Promotions.Commands.DeleteDiscountPromo.DeleteDiscountPromoCommand, Result>, DentalManagement.Application.Promotions.Commands.DeleteDiscountPromo.DeleteDiscountPromoCommandHandler>();
+
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Promotions.Queries.GetDiscountPromosPaged.GetDiscountPromosPagedQuery, Result<PagedResult<DentalManagement.Application.Promotions.Common.DiscountPromoDto>>>, DentalManagement.Application.Promotions.Queries.GetDiscountPromosPaged.GetDiscountPromosPagedQueryHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Promotions.Queries.GetDiscountPromoById.GetDiscountPromoByIdQuery, Result<DentalManagement.Application.Promotions.Common.DiscountPromoDto>>, DentalManagement.Application.Promotions.Queries.GetDiscountPromoById.GetDiscountPromoByIdQueryHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Promotions.Queries.ValidateDiscountPromo.ValidateDiscountPromoQuery, Result<DentalManagement.Application.Promotions.Common.DiscountValidationResultDto>>, DentalManagement.Application.Promotions.Queries.ValidateDiscountPromo.ValidateDiscountPromoQueryHandler>();
+
+        // Treatment Plans Handlers
+        services.AddScoped<ICommandHandler<DentalManagement.Application.Treatments.CreateTreatmentPlan.CreateTreatmentPlanCommand, Result<Guid>>, DentalManagement.Application.Treatments.CreateTreatmentPlan.CreateTreatmentPlanHandler>();
+        services.AddScoped<IQueryHandler<DentalManagement.Application.Treatments.GetTreatmentPlansByPatient.GetTreatmentPlansByPatientQuery, Result<IReadOnlyList<DentalManagement.Application.Treatments.Common.TreatmentPlanDto>>>, DentalManagement.Application.Treatments.GetTreatmentPlansByPatient.GetTreatmentPlansByPatientHandler>();
+        services.AddScoped<ICommandHandler<CreateTreatmentStepCommand, Result<Guid>>, CreateTreatmentStepHandler>();
+        services.AddScoped<IQueryHandler<GetTreatmentStepsByPlanQuery, Result<IReadOnlyList<TreatmentStepDto>>>, GetTreatmentStepsByPlanHandler>();
+        services.AddScoped<ICommandHandler<UpdateTreatmentStepCommand, Result<bool>>, UpdateTreatmentStepHandler>();
+        services.AddScoped<ICommandHandler<ChangeTreatmentStepStatusCommand, Result<bool>>, ChangeTreatmentStepStatusHandler>();
+        services.AddScoped<ICommandHandler<DeleteTreatmentStepCommand, Result<bool>>, DeleteTreatmentStepHandler>();
 
         return services;
     }

@@ -9,6 +9,7 @@ public static class CollectionNames
     public const string Doctors = "doctors";
     public const string Appointments = "appointments";
     public const string TreatmentPlans = "treatmentPlans";
+    public const string TreatmentSteps = "treatmentSteps";
     public const string Services = "services";
     public const string MedicalImages = "medicalImages";
     public const string InventoryItems = "inventoryItems";
@@ -17,7 +18,9 @@ public static class CollectionNames
     public const string Prescriptions = "prescriptions";
     public const string Invoices = "invoices";
     public const string DiscountPrograms = "discountPrograms";
+    public const string DiscountPromos = "discountPromos";
     public const string InsuranceClaims = "insuranceClaims";
     public const string AuditLogs = "auditLogs";
     public const string RefreshTokens = "refresh_tokens";
+    public const string ServiceCategories = "serviceCategories";
 }
