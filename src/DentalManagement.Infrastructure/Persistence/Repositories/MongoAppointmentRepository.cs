@@ -19,9 +19,10 @@ public sealed class MongoAppointmentRepository : IAppointmentRepository
 
     public async Task<Appointment?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        var document = await _context.Appointments
-            .Find(document => document.Id == id)
-            .FirstOrDefaultAsync(cancellationToken);
+        var filter = Builders<AppointmentDocument>.Filter.Eq(document => document.Id, id);
+        var document = _sessionAccessor.Current is { } session
+            ? await _context.Appointments.Find(session, filter).FirstOrDefaultAsync(cancellationToken)
+            : await _context.Appointments.Find(filter).FirstOrDefaultAsync(cancellationToken);
 
         return document is null ? null : AppointmentDocumentMapper.ToDomain(document);
     }
@@ -83,6 +84,24 @@ public sealed class MongoAppointmentRepository : IAppointmentRepository
         return documents.Select(AppointmentDocumentMapper.ToDomain).ToList();
     }
 
+    public async Task<bool> LockDoctorScheduleAsync(Guid doctorId, Guid clinicId, CancellationToken cancellationToken)
+    {
+        var session = _sessionAccessor.Current
+            ?? throw new InvalidOperationException("A transaction is required to reserve a doctor's time slot.");
+        var builder = Builders<DoctorDocument>.Filter;
+        var filter = builder.Eq(doctor => doctor.Id, doctorId)
+            & (builder.Eq(doctor => doctor.ClinicId, clinicId)
+                | builder.Eq(doctor => doctor.ClinicId, null)
+                | builder.ElemMatch(doctor => doctor.WorkSchedules,
+                    schedule => schedule.ClinicId == clinicId && schedule.IsActive));
+
+        // Different appointment inserts only conflict when both transactions write to the same doctor.
+        var updated = await _context.Doctors.UpdateOneAsync(session, filter,
+            Builders<DoctorDocument>.Update.Inc("scheduleReservationVersion", 1L),
+            cancellationToken: cancellationToken);
+        return updated.MatchedCount == 1;
+    }
+
     public async Task<bool> HasDoctorConflictAsync(
         Guid doctorId,
         DateTimeOffset startsAt,
@@ -97,7 +116,9 @@ public sealed class MongoAppointmentRepository : IAppointmentRepository
             builder.Ne(document => document.Status, nameof(AppointmentStatus.Cancelled)),
             builder.Lt(document => document.StartsAt, requestedEnd),
             builder.Or(
-                builder.Eq(document => document.EndsAt, null),
+                builder.And(
+                    builder.Eq(document => document.EndsAt, null),
+                    builder.Gt(document => document.StartsAt, startsAt.AddMinutes(-30))),
                 builder.Gt(document => document.EndsAt, startsAt)));
 
         if (excludingAppointmentId is not null)

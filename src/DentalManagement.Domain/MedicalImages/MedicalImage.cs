@@ -66,7 +66,8 @@ public sealed class MedicalImage : AuditableEntity
         int? toothNumber = null,
         string? notes = null,
         DateTimeOffset? capturedAt = null,
-        string? uploadedBy = null)
+        string? uploadedBy = null,
+        string? comparisonRole = null)
         : base(id)
     {
         if (clinicId == Guid.Empty)
@@ -117,6 +118,7 @@ public sealed class MedicalImage : AuditableEntity
         Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
         CapturedAt = capturedAt;
         UploadedBy = string.IsNullOrWhiteSpace(uploadedBy) ? null : uploadedBy.Trim();
+        ComparisonRole = comparisonRole;
     }
 
     public Guid ClinicId { get; }
@@ -139,4 +141,5 @@ public sealed class MedicalImage : AuditableEntity
     public DateTimeOffset? CapturedAt { get; }
 
     public string? UploadedBy { get; }
+    public string? ComparisonRole { get; }
 }

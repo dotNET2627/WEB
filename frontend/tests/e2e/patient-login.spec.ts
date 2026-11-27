@@ -84,8 +84,19 @@ test.describe("Cổng đăng nhập Bệnh nhân (/portal/login) - Tiêu chuẩn
     await page.check('input[type="checkbox"]');
 
     // 2. Gửi yêu cầu OTP
+    const otpResponse = page.waitForResponse((response) =>
+      response.url().endsWith("/api/auth/patient/send-otp") && response.request().method() === "POST"
+    );
     await page.click('button[type="submit"]');
 
+    if (process.env.PLAYWRIGHT_PRODUCTION === "1") {
+      expect((await otpResponse).status()).toBe(503);
+      await expect(page.getByRole("alert").filter({ hasText: "Đăng nhập bằng OTP hiện chưa mở" })).toBeVisible();
+      await expect(page.locator('input[aria-label^="Chữ số xác thực"]')).toHaveCount(0);
+      return;
+    }
+
+    expect((await otpResponse).status()).toBe(200);
     // 3. Chuyển sang màn hình OTP
     await expect(page.locator("text=Mã xác thực gồm 6 chữ số")).toBeVisible({ timeout: 10000 });
 

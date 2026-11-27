@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, executeRefreshToken, setAccessToken, setOnSessionExpired } from "@/lib/api-client";
+import { apiClient, executeRefreshToken, setAccessToken, setOnSessionExpired, setSelectedClinic } from "@/lib/api-client";
 import type { LoginRequest, LoginResponse, SwitchClinicResponse, User } from "@/types/auth";
 
 interface AuthContextType {
@@ -21,6 +21,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 function setSessionCookies(user: User) {
   if (typeof document === "undefined") return;
+  setSelectedClinic(user.activeClinicId ?? null);
   let roleValue = "staff";
   if (user.roles?.some((r) => r.toLowerCase() === "superadmin")) {
     roleValue = "superadmin";
@@ -37,6 +38,7 @@ function setSessionCookies(user: User) {
 
 function clearSessionCookies() {
   if (typeof document === "undefined") return;
+  setSelectedClinic(null);
   document.cookie = "auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
   document.cookie = "auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
 }
@@ -241,6 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     setAccessToken(response.accessToken);
+    setSelectedClinic(response.clinicId);
     scheduleSilentRefresh(response.expiresIn);
 
     // Refresh current user state with new clinic context

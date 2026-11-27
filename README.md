@@ -503,6 +503,13 @@ CreateAppointmentHandler.Handle(CreateAppointmentCommand)
 
 ---
 
+## Chạy bản production
+
+- Dùng `docker compose -f docker-compose.yml up --build` để khởi động API, MongoDB replica set và Redis với cấu hình production. Cấu hình `FRONTEND_ORIGIN` và `NEXT_PUBLIC_API_BASE_URL` theo các URL HTTPS thực tế khi chạy frontend và API sau proxy.
+- Đặt mật khẩu riêng cho MongoDB và Redis cùng khóa ký JWT ngẫu nhiên tối thiểu 32 byte. Đặt `BOOTSTRAP_ADMIN_EMAIL` và `BOOTSTRAP_ADMIN_PASSWORD` để tạo quản trị viên đầu tiên. Sau khi đăng nhập và tạo chi nhánh từ màn hình **Chi nhánh**, gỡ hai biến bootstrap khỏi cấu hình. Nếu chuyển dữ liệu từ môi trường từng bật seed mẫu, hãy thu hồi tài khoản và phiên mẫu trước khi sử dụng.
+- API lưu tệp ảnh trong volume `medical_images`. Sao lưu volume này cùng dữ liệu MongoDB để khôi phục đầy đủ hồ sơ.
+- Bản production mở các màn hình nghiệp vụ đã kết nối API. Bàn khám, kê đơn, các màn hình quản trị mô phỏng và đăng nhập hoặc đặt lịch từ cổng bệnh nhân được giữ ở môi trường phát triển cho đến khi có tích hợp thật. Các màn hình đặt lịch tại quầy và tiếp đón dùng API.
+
 ## Phụ lục: Trạng thái hiện tại & Roadmap kỹ thuật
 
 | Hạng mục | Trạng thái | Ghi chú |

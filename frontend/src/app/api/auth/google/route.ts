@@ -3,12 +3,16 @@ import { createPatientSession } from "@/lib/otp-security";
 import { verifyGoogleIdToken } from "@/lib/google-auth";
 
 export async function POST(request: NextRequest) {
-  // NextRequest import
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { success: false, error: "Đăng nhập bằng Google hiện chưa mở. Vui lòng liên hệ phòng khám." },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const idToken = typeof body?.idToken === "string" ? body.idToken : null;
-
-    const isProduction = process.env.NODE_ENV === "production";
 
     let googleEmail = "patient.clinic@gmail.com";
     let googleName = "Bệnh nhân Google";
@@ -23,11 +27,6 @@ export async function POST(request: NextRequest) {
       }
       googleEmail = verified.email;
       googleName = verified.name;
-    } else if (isProduction) {
-      return NextResponse.json(
-        { success: false, error: "Thiếu mã xác thực Google. Vui lòng đăng nhập lại." },
-        { status: 400 }
-      );
     }
     // Dev fallback: mock user when no client ID / no token provided
 
@@ -58,7 +57,7 @@ export async function POST(request: NextRequest) {
       name: "patient_session",
       value: sessionId,
       httpOnly: true,
-      secure: isProduction,
+      secure: false,
       sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60
@@ -68,7 +67,7 @@ export async function POST(request: NextRequest) {
       name: "auth_session",
       value: "1",
       httpOnly: false,
-      secure: isProduction,
+      secure: false,
       sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60
@@ -78,7 +77,7 @@ export async function POST(request: NextRequest) {
       name: "auth_role",
       value: "patient",
       httpOnly: false,
-      secure: isProduction,
+      secure: false,
       sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60

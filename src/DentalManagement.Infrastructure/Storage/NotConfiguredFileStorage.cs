@@ -10,6 +10,9 @@ public sealed class NotConfiguredFileStorage : IFileStorage
     public Task<string> SaveAsync(Stream content, string fileName, string contentType, CancellationToken cancellationToken) =>
         throw new NotSupportedException("No file-storage provider has been configured.");
 
+    public Task<Stream?> OpenReadAsync(string storageKey, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("No file-storage provider has been configured.");
+
     public Task DeleteAsync(string storageKey, CancellationToken cancellationToken) =>
         throw new NotSupportedException("No file-storage provider has been configured.");
 }

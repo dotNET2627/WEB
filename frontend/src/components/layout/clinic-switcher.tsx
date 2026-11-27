@@ -29,45 +29,21 @@ export function ClinicSwitcher({ className }: ClinicSwitcherProps) {
     user?.roles?.some((r) => r.toLowerCase() === "clinicadmin" || r.toLowerCase() === "branchadmin" || r.toLowerCase() === "manager")
   );
 
-  // Tải danh sách chi nhánh
+  const userId = user?.id;
   useEffect(() => {
+    if (!userId) {
+      setClinics([]);
+      return;
+    }
+
     let isMounted = true;
     setIsLoadingClinics(true);
-    clinicService
-      .getClinics({ pageSize: 50 })
+    clinicService.getClinics({ pageSize: 50 })
       .then((res) => {
         if (isMounted) setClinics(res.items);
       })
       .catch(() => {
-        // Fallback danh sách mặc định nếu chưa có kết nối API
-        if (isMounted) {
-          setClinics([
-            {
-              id: "cli-01",
-              name: "Nha khoa DentalCare - Quận 1",
-              address: "123 Nguyễn Thị Minh Khai, P. Bến Thành, Q.1, TP.HCM",
-              isActive: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            },
-            {
-              id: "cli-02",
-              name: "Nha khoa DentalCare - Cầu Giấy",
-              address: "45 Trần Duy Hưng, Trung Hòa, Cầu Giấy, Hà Nội",
-              isActive: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            },
-            {
-              id: "cli-03",
-              name: "Nha khoa DentalCare - Đà Nẵng",
-              address: "88 Nguyễn Văn Linh, Nam Dương, Hải Châu, Đà Nẵng",
-              isActive: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            }
-          ]);
-        }
+        if (isMounted) setClinics([]);
       })
       .finally(() => {
         if (isMounted) setIsLoadingClinics(false);
@@ -76,7 +52,7 @@ export function ClinicSwitcher({ className }: ClinicSwitcherProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [userId, isOpen]);
 
   // Xử lý click ra ngoài để đóng dropdown
   useEffect(() => {
@@ -94,7 +70,7 @@ export function ClinicSwitcher({ className }: ClinicSwitcherProps) {
   }, [isOpen]);
 
   // Tìm chi nhánh hiện tại
-  const currentClinic = clinics.find((c) => c.id === user?.activeClinicId) || clinics[0];
+  const currentClinic = clinics.find((c) => c.id === user?.activeClinicId);
 
   const handleSelectClinic = async (clinicId: string) => {
     if (clinicId === user?.activeClinicId || isSwitching) return;

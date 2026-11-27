@@ -39,6 +39,26 @@ public static class MedicalImageEndpoints
         .ProducesProblem(400)
         .ProducesProblem(404);
 
+        group.MapGet("/{patientId:guid}/images/{imageId:guid}/content", async (
+            Guid patientId,
+            Guid imageId,
+            HttpContext httpContext,
+            ICurrentUser user,
+            MedicalImageService service,
+            CancellationToken ct) =>
+        {
+            var result = await service.OpenAsync(user.ClinicId!.Value, patientId, imageId, ct);
+            if (result.IsFailure)
+                return ToProblem(result.Error!);
+
+            httpContext.Response.Headers.CacheControl = "no-store";
+            httpContext.Response.Headers.XContentTypeOptions = "nosniff";
+            var file = result.Value!;
+            return Results.File(file.Content, file.ContentType);
+        })
+        .WithName("GetMedicalImageContent")
+        .RequireAuthorization(DefaultPermissions.Patients.Read);
+
         // Tải lên ảnh y tế (multipart/form-data, tối đa 15 MB, jpg/png/dicom).
         group.MapPost("/{patientId:guid}/images", async (
             Guid patientId,
@@ -48,6 +68,7 @@ public static class MedicalImageEndpoints
             [FromForm] int? toothNumber,
             [FromForm] string? notes,
             [FromForm] DateTimeOffset? capturedAt,
+            [FromForm] string? comparisonRole,
             [FromServices] ICurrentUser user,
             [FromServices] MedicalImageService service,
             CancellationToken ct) =>
@@ -71,7 +92,8 @@ public static class MedicalImageEndpoints
                 toothNumber,
                 notes,
                 capturedAt,
-                user.UserId?.ToString());
+                user.UserId?.ToString(),
+                comparisonRole);
 
             await using var content = file.OpenReadStream();
             var result = await service.UploadAsync(command, content, ct);

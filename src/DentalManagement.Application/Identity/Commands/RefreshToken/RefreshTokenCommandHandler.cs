@@ -10,6 +10,7 @@ public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCom
 {
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
+    private readonly IClinicRepository _clinics;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ITokenService _tokenService;
     private readonly IClock _clock;
@@ -17,12 +18,14 @@ public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCom
     public RefreshTokenCommandHandler(
         IUserRepository userRepository,
         IRoleRepository roleRepository,
+        IClinicRepository clinics,
         IRefreshTokenRepository refreshTokenRepository,
         ITokenService tokenService,
         IClock clock)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
+        _clinics = clinics;
         _refreshTokenRepository = refreshTokenRepository;
         _tokenService = tokenService;
         _clock = clock;
@@ -79,7 +82,12 @@ public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCom
         await _refreshTokenRepository.AddAsync(newToken, cancellationToken);
 
         // Resolve roles and permissions
-        var activeClinicId = user.DefaultClinicId ?? user.GetAssignedClinicIds().FirstOrDefault();
+        var assignedClinics = user.GetAssignedClinicIds();
+        var activeClinicId = command.ClinicId is { } clinicId
+            && (assignedClinics.Count == 0 || assignedClinics.Contains(clinicId))
+            && await _clinics.GetByIdAsync(clinicId, cancellationToken) is { IsActive: true }
+            ? clinicId
+            : user.DefaultClinicId ?? assignedClinics.FirstOrDefault();
         var roleIds = user.GetRoleIdsForClinic(activeClinicId);
         var roles = await _roleRepository.GetByIdsAsync(roleIds, cancellationToken);
         var roleNames = roles.Select(r => r.Name).Distinct().ToList();

@@ -9,9 +9,6 @@ public static class MedicalImageLimits
     public const int MaxTitleLength = 200;
     public const int MaxNotesLength = 1000;
 
-    /// <summary>Public route under which stored files are served (static files middleware).</summary>
-    public const string PublicPathPrefix = "/files/medical-images";
-
     public static readonly IReadOnlySet<string> AllowedExtensions =
         new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".dcm", ".dicom" };
 

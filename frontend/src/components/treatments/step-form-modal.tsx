@@ -86,8 +86,8 @@ export function StepFormModal({
         notes: notes.trim() || null
       });
       onClose();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || "Có lỗi xảy ra khi lưu hạng mục.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi lưu hạng mục.");
     } finally {
       setSubmitting(false);
     }

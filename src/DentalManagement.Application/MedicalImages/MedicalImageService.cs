@@ -38,6 +38,8 @@ public sealed class MedicalImageService(
             return Failure<MedicalImageDto>("image.invalid", "Tên ảnh là bắt buộc và tối đa 200 ký tự.");
         if (command.Notes?.Length > MedicalImageLimits.MaxNotesLength)
             return Failure<MedicalImageDto>("image.invalid", "Ghi chú tối đa 1000 ký tự.");
+        if (command.ComparisonRole is not (null or "regular" or "before" or "after"))
+            return Failure<MedicalImageDto>("image.invalid", "Loại ảnh so sánh không hợp lệ.");
         if (command.ToothNumber is { } toothNumber &&
             !ToothCondition.IsValidToothNumber(toothNumber))
             return Failure<MedicalImageDto>(
@@ -61,7 +63,8 @@ public sealed class MedicalImageService(
             command.ToothNumber,
             command.Notes,
             command.CapturedAt,
-            command.UploadedBy);
+            command.UploadedBy,
+            command.ComparisonRole);
 
         try
         {
@@ -93,6 +96,19 @@ public sealed class MedicalImageService(
             .ToArray());
     }
 
+    public async Task<Result<MedicalImageFile>> OpenAsync(
+        Guid clinicId, Guid patientId, Guid imageId, CancellationToken cancellationToken)
+    {
+        if (await patients.GetByIdAsync(clinicId, patientId, cancellationToken) is null)
+            return Failure<MedicalImageFile>("patient.not_found", "Không tìm thấy bệnh nhân.");
+
+        var image = await images.GetByIdAsync(clinicId, patientId, imageId, cancellationToken);
+        if (image is not null && await storage.OpenReadAsync(image.StorageKey, cancellationToken) is { } stream)
+            return Result<MedicalImageFile>.Success(new MedicalImageFile(stream, image.ContentType));
+
+        return Failure<MedicalImageFile>("image.not_found", "Không tìm thấy ảnh y tế.");
+    }
+
     public async Task<Result> DeleteAsync(
         Guid clinicId, Guid patientId, Guid imageId, CancellationToken cancellationToken)
     {
@@ -113,12 +129,14 @@ public sealed class MedicalImageService(
         image.PatientId,
         image.Type.ToToken(),
         image.Title,
-        $"{MedicalImageLimits.PublicPathPrefix}/{image.StorageKey}",
+        $"/api/v1/patients/{image.PatientId}/images/{image.Id}/content",
         image.ToothNumber,
         image.Notes,
         image.CapturedAt,
         image.CreatedAt,
-        image.UpdatedAt);
+        image.UpdatedAt,
+        image.ComparisonRole,
+        image.ContentType);
 
     private async Task TryDeleteFileAsync(string storageKey)
     {
@@ -158,7 +176,10 @@ public sealed record UploadMedicalImageCommand(
     int? ToothNumber = null,
     string? Notes = null,
     DateTimeOffset? CapturedAt = null,
-    string? UploadedBy = null);
+    string? UploadedBy = null,
+    string? ComparisonRole = null);
+
+public sealed record MedicalImageFile(Stream Content, string ContentType);
 
 public sealed record MedicalImageDto(
     Guid Id,
@@ -170,4 +191,6 @@ public sealed record MedicalImageDto(
     string? Notes,
     DateTimeOffset? CapturedAt,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    string? ComparisonRole,
+    string ContentType);

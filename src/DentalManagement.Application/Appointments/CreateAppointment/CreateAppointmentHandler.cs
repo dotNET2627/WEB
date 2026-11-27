@@ -43,11 +43,11 @@ public sealed class CreateAppointmentHandler
             command.Reason,
             domainServices);
 
-        Result<Guid>? failureResult = null;
-
-        await _transactionRunner.ExecuteAsync(async ct =>
+        return await _transactionRunner.ExecuteAsync(async ct =>
         {
-            // Guard: check for scheduling conflicts within the transaction session to prevent race conditions
+            if (!await _appointments.LockDoctorScheduleAsync(command.DoctorId, command.ClinicId, ct))
+                return Result<Guid>.Failure("doctor.not_found", "Không tìm thấy bác sĩ trong phòng khám.");
+
             bool conflict = await _appointments.HasDoctorConflictAsync(
                 command.DoctorId,
                 command.StartsAt,
@@ -57,20 +57,13 @@ public sealed class CreateAppointmentHandler
 
             if (conflict)
             {
-                failureResult = Result<Guid>.Failure(
+                return Result<Guid>.Failure(
                     "appointment.conflict",
                     "Bác sĩ đã có lịch hẹn trong khoảng thời gian này.");
-                return;
             }
 
             await _appointments.AddAsync(appointment, ct);
+            return Result<Guid>.Success(appointment.Id);
         }, cancellationToken);
-
-        if (failureResult is not null)
-        {
-            return failureResult;
-        }
-
-        return Result<Guid>.Success(appointment.Id);
     }
 }

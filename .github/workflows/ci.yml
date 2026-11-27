@@ -16,28 +16,6 @@ jobs:
     name: Build & Test (.NET ${{ env.DOTNET_VERSION }})
     runs-on: ubuntu-latest
 
-    services:
-      mongo:
-        image: mongo:8.0
-        ports:
-          - "27017:27017"
-        options: >-
-          --health-cmd "mongosh --quiet --eval \"try{rs.status().ok}catch(e){0}\""
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 40s
-
-      redis:
-        image: redis:7.4-alpine
-        ports:
-          - "6379:6379"
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,12 +33,6 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
-      # Initialise MongoDB replica set (needed for transactions)
-      - name: Init MongoDB replica set
-        run: |
-          docker exec $(docker ps -q --filter "ancestor=mongo:8.0") mongosh --quiet \
-            --eval "try { rs.status() } catch(e) { rs.initiate({ _id:'rs0', members:[{_id:0,host:'localhost:27017'}] }) }"
-
       - name: Restore dependencies
         run: dotnet restore
 
@@ -73,14 +45,6 @@ jobs:
           --verbosity normal
           --logger "trx;LogFileName=test-results.trx"
           --results-directory ./test-results
-        env:
-          MongoDb__ConnectionString: "mongodb://localhost:27017/?replicaSet=rs0"
-          MongoDb__DatabaseName: "DentalManagementTest"
-          Redis__ConnectionString: "localhost:6379"
-          Redis__InstanceName: "dental-test:"
-          Jwt__SecretKey: "ci-test-secret-key-at-least-32-chars!!"
-          Jwt__Issuer: "DentalManagement.Api"
-          Jwt__Audience: "DentalManagement.Client"
 
       - name: Upload test results
         if: always()
@@ -89,6 +53,34 @@ jobs:
           name: test-results
           path: ./test-results/*.trx
           retention-days: 7
+
+  frontend:
+    name: Build & Test (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: node --test tests/unit/otp-rate-limit.test.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Run production browser tests
+        env:
+          PLAYWRIGHT_PRODUCTION: "1"
+        run: |
+          npm run start &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          timeout 30 bash -c 'until curl -fsS http://localhost:3000/portal/login >/dev/null; do sleep 1; done'
+          npx playwright test
 
   docker-build:
     name: Docker Build (smoke test)

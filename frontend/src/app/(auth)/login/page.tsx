@@ -174,13 +174,15 @@ function LoginForm() {
                 <span className="text-xs text-slate-600">Ghi nhớ đăng nhập</span>
               </label>
 
-              <button
-                type="button"
-                onClick={handleFillDemo}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-2"
-              >
-                Dùng tài khoản mẫu
-              </button>
+              {process.env.NODE_ENV !== "production" && (
+                <button
+                  type="button"
+                  onClick={handleFillDemo}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                >
+                  Dùng tài khoản mẫu
+                </button>
+              )}
             </div>
 
             <button

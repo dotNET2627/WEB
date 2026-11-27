@@ -1,3 +1,5 @@
+import type { InvoiceStatus } from "@/types/invoice";
+
 export interface FinancialReportDto {
   clinicId: string;
   from: string;
@@ -53,7 +55,7 @@ export interface FinancialInvoiceSummaryDto {
   totalAmount: number;
   paidAmount: number;
   outstandingAmount: number;
-  status: string;
+  status: InvoiceStatus;
 }
 
 export interface PatientDebtSummaryDto {

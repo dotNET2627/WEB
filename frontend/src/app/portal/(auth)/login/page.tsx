@@ -92,8 +92,7 @@ function PatientLoginForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phoneNumber: phoneValidation.normalizedPhone,
-          captchaToken: "verified-client-session"
+          phoneNumber: phoneValidation.normalizedPhone
         })
       });
 
@@ -111,7 +110,7 @@ function PatientLoginForm() {
 
       setNormalizedPhone(phoneValidation.normalizedPhone);
       setMaskedPhone(data.phoneMasked || maskPhoneDisplay(phoneValidation.normalizedPhone));
-      setGenericNotice("Mã xác thực gồm 6 chữ số đã được gửi qua tin nhắn SMS.");
+      setGenericNotice(data.message);
       setStep("otp");
       setCountdown(60);
       setOtpDigits(["", "", "", "", "", ""]);

@@ -22,6 +22,7 @@ public interface IAppointmentRepository
         Guid clinicId,
         DateOnly date,
         CancellationToken cancellationToken);
+    Task<bool> LockDoctorScheduleAsync(Guid doctorId, Guid clinicId, CancellationToken cancellationToken);
     Task<bool> HasDoctorConflictAsync(
         Guid doctorId,
         DateTimeOffset startsAt,

@@ -207,13 +207,15 @@ function AdminLoginForm() {
                 <span className="text-xs text-slate-300">Ghi nhớ đăng nhập</span>
               </label>
 
-              <button
-                type="button"
-                onClick={handleFillDemo}
-                className="text-xs font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition"
-              >
-                Dùng tài khoản SuperAdmin mẫu
-              </button>
+              {process.env.NODE_ENV !== "production" && (
+                <button
+                  type="button"
+                  onClick={handleFillDemo}
+                  className="text-xs font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition"
+                >
+                  Dùng tài khoản SuperAdmin mẫu
+                </button>
+              )}
             </div>
 
             <button

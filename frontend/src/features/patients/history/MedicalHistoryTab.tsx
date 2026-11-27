@@ -67,7 +67,7 @@ export function MedicalHistoryTab({
     if (!confirm(`Xác nhận xóa "${itemName}" khỏi hồ sơ bệnh lý?`)) return;
     try {
       await patientService.deleteMedicalHistory(patientId, id);
-      onItemsChange(safeItems.filter((item) => item.id !== id));
+      onItemsChange(await patientService.getMedicalHistory(patientId));
       showToast(`Đã xóa "${itemName}".`, "success");
     } catch {
       showToast("Lỗi khi xóa mục bệnh lý.", "error");

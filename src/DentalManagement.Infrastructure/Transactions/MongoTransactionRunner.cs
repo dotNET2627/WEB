@@ -28,15 +28,7 @@ public sealed class MongoTransactionRunner : ITransactionRunner
 
         try
         {
-            session.StartTransaction();
-            var result = await action(cancellationToken);
-            await session.CommitTransactionAsync(cancellationToken);
-            return result;
-        }
-        catch
-        {
-            await session.AbortTransactionAsync(cancellationToken);
-            throw;
+            return await session.WithTransactionAsync((_, token) => action(token), cancellationToken: cancellationToken);
         }
         finally
         {

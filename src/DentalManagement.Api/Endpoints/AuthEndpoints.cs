@@ -95,7 +95,9 @@ public static class AuthEndpoints
             var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
             var userAgent = httpContext.Request.Headers.UserAgent.ToString();
 
-            var command = new RefreshTokenCommand(rawToken, ipAddress, userAgent);
+            var clinicId = Guid.TryParse(httpContext.Request.Headers["X-Clinic-Id"], out var selectedClinicId)
+                && selectedClinicId != Guid.Empty ? selectedClinicId : (Guid?)null;
+            var command = new RefreshTokenCommand(rawToken, ipAddress, userAgent, clinicId);
             var result = await handler.Handle(command, cancellationToken);
 
             if (result.IsFailure)

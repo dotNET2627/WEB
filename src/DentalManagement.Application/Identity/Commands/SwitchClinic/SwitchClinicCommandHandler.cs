@@ -9,17 +9,20 @@ public sealed class SwitchClinicCommandHandler : ICommandHandler<SwitchClinicCom
 {
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
+    private readonly IClinicRepository _clinics;
     private readonly ICurrentUser _currentUser;
     private readonly ITokenService _tokenService;
 
     public SwitchClinicCommandHandler(
         IUserRepository userRepository,
         IRoleRepository roleRepository,
+        IClinicRepository clinics,
         ICurrentUser currentUser,
         ITokenService tokenService)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
+        _clinics = clinics;
         _currentUser = currentUser;
         _tokenService = tokenService;
     }
@@ -38,7 +41,8 @@ public sealed class SwitchClinicCommandHandler : ICommandHandler<SwitchClinicCom
         }
 
         var assignedClinics = user.GetAssignedClinicIds();
-        if (assignedClinics.Count > 0 && !assignedClinics.Contains(command.TargetClinicId))
+        if ((assignedClinics.Count > 0 && !assignedClinics.Contains(command.TargetClinicId))
+            || await _clinics.GetByIdAsync(command.TargetClinicId, cancellationToken) is not { IsActive: true })
         {
             return Result<SwitchClinicResponseDto>.Failure(
                 "auth.clinic_access_denied",

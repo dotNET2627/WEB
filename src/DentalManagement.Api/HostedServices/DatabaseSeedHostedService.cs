@@ -7,20 +7,28 @@ using DentalManagement.Domain.Clinics;
 using DentalManagement.Domain.Doctors;
 using DentalManagement.Domain.Identity;
 using DentalManagement.Domain.Patients;
+using System.Net.Mail;
 
 namespace DentalManagement.Api.HostedServices;
 
 public sealed class DatabaseSeedHostedService : IHostedService
 {
+    private const string SamplePassword = "Password123!";
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<DatabaseSeedHostedService> _logger;
+    private readonly IHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
 
     public DatabaseSeedHostedService(
         IServiceProvider serviceProvider,
-        ILogger<DatabaseSeedHostedService> logger)
+        ILogger<DatabaseSeedHostedService> logger,
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _environment = environment;
+        _configuration = configuration;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -105,6 +113,30 @@ public sealed class DatabaseSeedHostedService : IHostedService
                 await roleRepo.UpdateAsync(receptionistRole, cancellationToken);
             }
 
+            if (!_environment.IsDevelopment())
+            {
+                var email = _configuration["Bootstrap:AdminEmail"]?.Trim();
+                var password = _configuration["Bootstrap:AdminPassword"];
+                if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(password))
+                    return;
+
+                if (!MailAddress.TryCreate(email, out var address) || address.Address != email
+                    || string.IsNullOrWhiteSpace(password) || password.Length < 12 || password == SamplePassword)
+                {
+                    throw new InvalidOperationException("Bootstrap requires a valid AdminEmail and a unique AdminPassword of at least 12 characters.");
+                }
+
+                if (!await userRepo.ExistsByEmailAsync(email, cancellationToken))
+                {
+                    var administrator = new User(Guid.NewGuid(), email, "Quản trị viên hệ thống", passwordHasher.Hash(password));
+                    administrator.AssignRole(superAdminRole.Id, clinicId: null, assignedBy: null, clock.UtcNow);
+                    await userRepo.AddAsync(administrator, cancellationToken);
+                    _logger.LogInformation("Đã khởi tạo tài khoản quản trị từ cấu hình.");
+                }
+
+                return;
+            }
+
             var clinicRepo = scope.ServiceProvider.GetRequiredService<IClinicRepository>();
             var doctorRepo = scope.ServiceProvider.GetRequiredService<IDoctorRepository>();
 
@@ -152,14 +184,14 @@ public sealed class DatabaseSeedHostedService : IHostedService
                     Guid.NewGuid(),
                     adminEmail,
                     "Quản Trị Viên Hệ Thống",
-                    passwordHasher.Hash("Password123!"),
+                    passwordHasher.Hash(SamplePassword),
                     defaultClinic.Id);
 
                 adminUser.AssignRole(superAdminRole!.Id, clinicId: null, assignedBy: null, clock.UtcNow);
                 adminUser.AssignRole(superAdminRole!.Id, clinicId: defaultClinic.Id, assignedBy: null, clock.UtcNow);
                 await userRepo.AddAsync(adminUser, cancellationToken);
 
-                _logger.LogInformation("Đã khởi tạo tài khoản Admin mặc định: {Email} / Password123!", adminEmail);
+                _logger.LogInformation("Đã khởi tạo tài khoản Admin mẫu: {Email}", adminEmail);
             }
             else
             {
@@ -185,7 +217,7 @@ public sealed class DatabaseSeedHostedService : IHostedService
                         Guid.NewGuid(),
                         doc1Email,
                         "BS. CKI Trần Minh Trí",
-                        passwordHasher.Hash("Password123!"),
+                        passwordHasher.Hash(SamplePassword),
                         defaultClinic.Id);
                     doc1User.AssignRole(doctorRole!.Id, defaultClinic.Id, adminUser.Id, clock.UtcNow);
                     await userRepo.AddAsync(doc1User, cancellationToken);
@@ -215,7 +247,7 @@ public sealed class DatabaseSeedHostedService : IHostedService
                         Guid.NewGuid(),
                         doc2Email,
                         "ThS. BS Lê Thanh Hương",
-                        passwordHasher.Hash("Password123!"),
+                        passwordHasher.Hash(SamplePassword),
                         defaultClinic.Id);
                     doc2User.AssignRole(doctorRole!.Id, defaultClinic.Id, adminUser.Id, clock.UtcNow);
                     await userRepo.AddAsync(doc2User, cancellationToken);
@@ -245,7 +277,7 @@ public sealed class DatabaseSeedHostedService : IHostedService
                         Guid.NewGuid(),
                         doc3Email,
                         "BS. Nguyễn Hoàng Nam",
-                        passwordHasher.Hash("Password123!"),
+                        passwordHasher.Hash(SamplePassword),
                         defaultClinic.Id);
                     doc3User.AssignRole(doctorRole!.Id, defaultClinic.Id, adminUser.Id, clock.UtcNow);
                     await userRepo.AddAsync(doc3User, cancellationToken);
@@ -276,11 +308,11 @@ public sealed class DatabaseSeedHostedService : IHostedService
                     Guid.NewGuid(),
                     receptionistEmail,
                     "Nhân Viên Lễ Tân Thử Nghiệm",
-                    passwordHasher.Hash("Password123!"),
+                    passwordHasher.Hash(SamplePassword),
                     defaultClinic.Id);
                 receptionistUser.AssignRole(receptionistRole!.Id, defaultClinic.Id, adminUser.Id, clock.UtcNow);
                 await userRepo.AddAsync(receptionistUser, cancellationToken);
-                _logger.LogInformation("Đã khởi tạo tài khoản Lễ tân mẫu: {Email} / Password123!", receptionistEmail);
+                _logger.LogInformation("Đã khởi tạo tài khoản Lễ tân mẫu: {Email}", receptionistEmail);
             }
 
             // Seed sample patients
@@ -409,7 +441,7 @@ public sealed class DatabaseSeedHostedService : IHostedService
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (_environment.IsDevelopment() && !cancellationToken.IsCancellationRequested)
         {
             _logger.LogError(ex, "Lỗi khi khởi tạo dữ liệu mẫu ban đầu.");
         }

@@ -66,21 +66,19 @@ export interface MedicalHistoryItem {
 }
 
 export type MedicalImageType =
-  | "panorex"      // Toàn cảnh (Panorama)
-  | "periapical"   // Chóp răng (Cận chóp)
-  | "bitewing"     // Cánh cắn
+  | "xray"        // Phim X-quang
   | "intraoral"    // Ảnh trong miệng
-  | "extraoral"    // Ảnh ngoài mặt
-  | "other";
+  | "extraoral";   // Ảnh ngoài mặt
 
 export interface MedicalImage {
   id: string;
   patientId: string;
   type: MedicalImageType;
   title: string;
-  imageUrl: string;
+  url: string;
+  contentType: string;
   toothNumber?: number;
-  capturedDate: string; // dd/MM/yyyy
+  capturedAt: string | null;
   notes?: string;
   comparisonRole?: "before" | "after" | "regular";
 }

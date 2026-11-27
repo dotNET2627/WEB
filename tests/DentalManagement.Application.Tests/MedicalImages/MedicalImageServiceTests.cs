@@ -42,12 +42,31 @@ public class MedicalImageServiceTests
         var dto = result.Value!;
         Assert.Equal("xray", dto.Type);
         Assert.Equal("Phim toàn cảnh Panorama", dto.Title);
-        Assert.StartsWith($"{MedicalImageLimits.PublicPathPrefix}/", dto.Url);
+        Assert.Equal($"/api/v1/patients/{dto.PatientId}/images/{dto.Id}/content", dto.Url);
         Assert.Equal(PatientId, dto.PatientId);
 
         var stored = Assert.Single(_storage.Files);
         Assert.EndsWith(".jpg", stored.Key);
         Assert.Single(_images.Images);
+    }
+
+    [Fact]
+    public async Task Open_ShouldReturnStoredFileOnlyForTheMatchingClinicAndPatient()
+    {
+        using var content = Content();
+        var uploaded = await _service.UploadAsync(Command(), content, CancellationToken.None);
+        var imageId = uploaded.Value!.Id;
+
+        var wrongClinic = await _service.OpenAsync(Guid.NewGuid(), PatientId, imageId, CancellationToken.None);
+        var wrongPatient = await _service.OpenAsync(ClinicId, Guid.NewGuid(), imageId, CancellationToken.None);
+        var result = await _service.OpenAsync(ClinicId, PatientId, imageId, CancellationToken.None);
+
+        Assert.True(wrongClinic.IsFailure);
+        Assert.True(wrongPatient.IsFailure);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("image/jpeg", result.Value!.ContentType);
+        await using var opened = result.Value.Content;
+        Assert.Equal(content.Length, opened.Length);
     }
 
     [Fact]
@@ -59,7 +78,7 @@ public class MedicalImageServiceTests
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.EndsWith(".dcm", result.Value!.Url);
+        Assert.Equal("application/dicom", result.Value!.ContentType);
     }
 
     [Fact]
@@ -199,7 +218,7 @@ public class MedicalImageServiceTests
         Assert.True(result.IsSuccess);
         var items = result.Value!;
         Assert.Equal(2, items.Length);
-        Assert.All(items, dto => Assert.StartsWith(MedicalImageLimits.PublicPathPrefix, dto.Url));
+        Assert.All(items, dto => Assert.Equal($"/api/v1/patients/{dto.PatientId}/images/{dto.Id}/content", dto.Url));
     }
 
     [Fact]

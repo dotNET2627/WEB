@@ -18,7 +18,10 @@ public sealed class UpdateAppointmentHandler
         _transactionRunner = transactionRunner;
     }
 
-    public async Task<Result> Handle(
+    public Task<Result> Handle(UpdateAppointmentCommand command, CancellationToken cancellationToken) =>
+        _transactionRunner.ExecuteAsync(ct => RescheduleAsync(command, ct), cancellationToken);
+
+    private async Task<Result> RescheduleAsync(
         UpdateAppointmentCommand command,
         CancellationToken cancellationToken)
     {
@@ -29,7 +32,9 @@ public sealed class UpdateAppointmentHandler
                 $"Không tìm thấy lịch hẹn với id '{command.AppointmentId}'.");
         }
 
-        // Check for conflicts with the new time slot, excluding this appointment itself
+        if (!await _appointments.LockDoctorScheduleAsync(appointment.DoctorId, command.ClinicId, cancellationToken))
+            return Result.Failure("doctor.not_found", "Không tìm thấy bác sĩ trong phòng khám.");
+
         bool conflict = await _appointments.HasDoctorConflictAsync(
             appointment.DoctorId,
             command.StartsAt,
@@ -49,10 +54,7 @@ public sealed class UpdateAppointmentHandler
             return rescheduleResult;
         }
 
-        await _transactionRunner.RunAsync(
-            async () => await _appointments.ReplaceAsync(appointment, cancellationToken),
-            cancellationToken);
-
+        await _appointments.ReplaceAsync(appointment, cancellationToken);
         return Result.Success();
     }
 }

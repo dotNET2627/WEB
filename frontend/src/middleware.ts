@@ -35,6 +35,7 @@ const KNOWN_ROUTE_PREFIXES = [
 
   // 3. Phân hệ Nghiệp vụ Phòng khám (Clinic Staff Portal)
   "/appointments",
+  "/cashier-shifts",
   "/clinics",
   "/doctor",
   "/doctors",
@@ -43,6 +44,10 @@ const KNOWN_ROUTE_PREFIXES = [
   "/invoices",
   "/patients",
   "/prescriptions",
+  "/promotions",
+  "/reception",
+  "/reports",
+  "/services",
   "/settings",
   "/treatment-plans",
 ];
@@ -59,8 +64,21 @@ function isKnownRoute(pathname: string): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession = request.cookies.has("auth_session");
   const authRole = request.cookies.get("auth_role")?.value?.toLowerCase();
+  const production = process.env.NODE_ENV === "production";
+  const hasSession = request.cookies.has("auth_session") && (!production || authRole !== "patient");
+
+  if (production) {
+    if (pathname === "/portal/dashboard" || pathname === "/portal/booking") {
+      return NextResponse.redirect(new URL("/portal/login", request.url));
+    }
+    if (pathname === "/dashboard" || pathname === "/doctor/workspace" || pathname === "/prescriptions") {
+      return NextResponse.redirect(new URL("/appointments", request.url));
+    }
+    if (pathname === "/admin" || pathname.startsWith("/admin/") && pathname !== "/admin/login") {
+      return NextResponse.redirect(new URL("/clinics", request.url));
+    }
+  }
 
   // =========================================================================
   // 0. CHUYỂN HƯỚNG TRANG CHỦ (localhost:3000 / "/") VÀO CỔNG THÔNG TIN (/portal)
@@ -109,9 +127,7 @@ export function middleware(request: NextRequest) {
   // =========================================================================
   const isPatientRoute = pathname === "/portal" || pathname.startsWith("/portal/");
   if (isPatientRoute) {
-    const isPatientPublic = PATIENT_PUBLIC_PATHS.some(
-      (path) => pathname === path || pathname.startsWith(`${path}/`)
-    );
+    const isPatientPublic = PATIENT_PUBLIC_PATHS.includes(pathname);
 
     // Truy cập root /portal (Landing Page công khai giới thiệu Cổng Bệnh nhân)
     if (pathname === "/portal") {

@@ -3,6 +3,13 @@ import { createPatientSession, verifyOtp } from "@/lib/otp-security";
 import { maskPhoneDisplay, validateVietnamesePhone } from "@/lib/phone-utils";
 
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { success: false, error: "Đăng nhập bằng OTP hiện chưa mở. Vui lòng liên hệ phòng khám." },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const rawPhone = body?.phoneNumber || "";
@@ -51,8 +58,6 @@ export async function POST(request: NextRequest) {
     // Tuyệt đối không nhận patientId từ client! Server tự sinh ID phiên và phân quyền
     const { sessionId } = await createPatientSession({ phone: normalizedPhone });
 
-    const isProduction = process.env.NODE_ENV === "production";
-
     // 5. Cấp Cookie HttpOnly an toàn cho trình duyệt
     const response = NextResponse.json(
       {
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest) {
       name: "patient_session",
       value: sessionId,
       httpOnly: true,
-      secure: isProduction,
+      secure: false,
       sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 // 7 ngày
@@ -90,7 +95,7 @@ export async function POST(request: NextRequest) {
       name: "auth_session",
       value: "1",
       httpOnly: false,
-      secure: isProduction,
+      secure: false,
       sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60
@@ -100,7 +105,7 @@ export async function POST(request: NextRequest) {
       name: "auth_role",
       value: "patient",
       httpOnly: false,
-      secure: isProduction,
+      secure: false,
       sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60

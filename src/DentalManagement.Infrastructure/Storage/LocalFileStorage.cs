@@ -37,6 +37,19 @@ public sealed class LocalFileStorage : IFileStorage
         return storageKey;
     }
 
+    public Task<Stream?> OpenReadAsync(string storageKey, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            return Task.FromResult<Stream?>(File.Open(Resolve(storageKey), FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete));
+        }
+        catch (FileNotFoundException)
+        {
+            return Task.FromResult<Stream?>(null);
+        }
+    }
+
     public Task DeleteAsync(string storageKey, CancellationToken cancellationToken)
     {
         var fullPath = Resolve(storageKey);

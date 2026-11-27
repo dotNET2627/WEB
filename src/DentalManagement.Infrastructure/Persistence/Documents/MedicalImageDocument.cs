@@ -41,4 +41,7 @@ public sealed class MedicalImageDocument : MongoDocument
 
     [BsonElement("uploadedBy")]
     public string? UploadedBy { get; init; }
+
+    [BsonElement("comparisonRole")]
+    public string? ComparisonRole { get; init; }
 }

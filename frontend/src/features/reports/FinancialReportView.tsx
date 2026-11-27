@@ -13,6 +13,10 @@ interface FinancialReportViewProps {
 
 type QuickDateFilter = "today" | "yesterday" | "last7days" | "thisMonth" | "custom";
 
+function clinicDate() {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+}
+
 export function FinancialReportView({ clinicId }: FinancialReportViewProps) {
   const [data, setData] = useState<FinancialReportDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,14 +24,8 @@ export function FinancialReportView({ clinicId }: FinancialReportViewProps) {
 
   // Date selection
   const [dateFilter, setDateFilter] = useState<QuickDateFilter>("today");
-  const [fromDate, setFromDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  });
-  const [toDate, setToDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  });
+  const [fromDate, setFromDate] = useState(clinicDate);
+  const [toDate, setToDate] = useState(clinicDate);
 
   // Active Tab: transactions | invoices | debtors
   const [activeTab, setActiveTab] = useState<"transactions" | "invoices" | "debtors">("transactions");
@@ -35,26 +33,25 @@ export function FinancialReportView({ clinicId }: FinancialReportViewProps) {
 
   const setQuickRange = (range: QuickDateFilter) => {
     setDateFilter(range);
-    const now = new Date();
+    const today = clinicDate();
+    const calendarDate = new Date(today);
+    const daysAgo = (days: number) => {
+      calendarDate.setUTCDate(calendarDate.getUTCDate() - days);
+      return calendarDate.toISOString().slice(0, 10);
+    };
     if (range === "today") {
-      const todayStr = now.toISOString().split("T")[0];
-      setFromDate(todayStr);
-      setToDate(todayStr);
+      setFromDate(today);
+      setToDate(today);
     } else if (range === "yesterday") {
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const str = yesterday.toISOString().split("T")[0];
-      setFromDate(str);
-      setToDate(str);
+      const yesterday = daysAgo(1);
+      setFromDate(yesterday);
+      setToDate(yesterday);
     } else if (range === "last7days") {
-      const sevenDaysAgo = new Date(now);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-      setFromDate(sevenDaysAgo.toISOString().split("T")[0]);
-      setToDate(now.toISOString().split("T")[0]);
+      setFromDate(daysAgo(6));
+      setToDate(today);
     } else if (range === "thisMonth") {
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      setFromDate(firstDay.toISOString().split("T")[0]);
-      setToDate(now.toISOString().split("T")[0]);
+      setFromDate(`${today.slice(0, 7)}-01`);
+      setToDate(today);
     }
   };
 
@@ -63,15 +60,11 @@ export function FinancialReportView({ clinicId }: FinancialReportViewProps) {
     setLoading(true);
     setError(null);
 
-    // Convert fromDate (00:00:00) and toDate (23:59:59) to ISO
-    const fromIso = `${fromDate}T00:00:00.000Z`;
-    const toIso = `${toDate}T23:59:59.999Z`;
-
     try {
       const res = await reportService.getFinancialReport({
         clinicId,
-        from: fromIso,
-        to: toIso,
+        from: new Date(`${fromDate}T00:00:00.000+07:00`).toISOString(),
+        to: new Date(`${toDate}T23:59:59.999+07:00`).toISOString(),
       });
       setData(res);
     } catch (err) {
@@ -592,7 +585,7 @@ export function FinancialReportView({ clinicId }: FinancialReportViewProps) {
                               )}
                             </td>
                             <td className="px-4 py-3 text-center">
-                              <InvoiceStatusBadge status={inv.status as any} />
+                              <InvoiceStatusBadge status={inv.status} />
                             </td>
                             <td className="px-4 py-3 text-right">
                               <Link

@@ -65,7 +65,7 @@ public static class AppointmentEndpoints
                 var error = result.Error!;
                 return error.Code switch
                 {
-                    "patient.not_found" => Results.Problem(statusCode: StatusCodes.Status404NotFound, detail: error.Message),
+                    "patient.not_found" or "doctor.not_found" => Results.Problem(statusCode: StatusCodes.Status404NotFound, detail: error.Message),
                     "appointment.conflict" => Results.Problem(
                         statusCode: StatusCodes.Status409Conflict,
                         title: "Trùng lịch hẹn",
@@ -159,7 +159,7 @@ public static class AppointmentEndpoints
                 var error = result.Error!;
                 return error.Code switch
                 {
-                    "appointment.not_found" => Results.Problem(
+                    "appointment.not_found" or "doctor.not_found" => Results.Problem(
                         statusCode: StatusCodes.Status404NotFound,
                         title: "Không tìm thấy lịch hẹn",
                         detail: error.Message),

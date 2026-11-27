@@ -19,6 +19,7 @@ RUN dotnet publish src/DentalManagement.Api/DentalManagement.Api.csproj \
 # ── Stage 2: runtime image ────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
+RUN install -d -o app -g app /app/storage/medical-images
 
 # Non-root user for security (built-in in .NET 8+)
 USER app

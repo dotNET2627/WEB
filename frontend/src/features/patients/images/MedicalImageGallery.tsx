@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
+import { apiClient } from "@/lib/api-client";
+import { formatDate } from "@/lib/format";
 import { patientService } from "@/services/patient-service";
 import { useToast } from "@/components/ui/toast";
 import type { MedicalImage, MedicalImageType } from "@/types/patient";
@@ -24,13 +26,46 @@ interface MedicalImageGalleryProps {
 }
 
 const IMAGE_TYPES: { type: MedicalImageType; label: string }[] = [
-  { type: "panorex", label: "Toàn cảnh (Panorex)" },
-  { type: "periapical", label: "Chóp răng (Periapical)" },
-  { type: "bitewing", label: "Cánh cắn (Bitewing)" },
+  { type: "xray", label: "Phim X-quang" },
   { type: "intraoral", label: "Ảnh trong miệng" },
-  { type: "extraoral", label: "Ảnh ngoài mặt" },
-  { type: "other", label: "Khác" }
+  { type: "extraoral", label: "Ảnh ngoài mặt" }
 ];
+
+function MedicalImagePreview({ image, className }: { image: MedicalImage; className: string }) {
+  const [preview, setPreview] = useState<{ path: string; src: string | null }>();
+  const canPreview = image.contentType.startsWith("image/");
+
+  useEffect(() => {
+    if (!canPreview) return;
+
+    const controller = new AbortController();
+    let objectUrl: string | undefined;
+    apiClient.getBlob(image.url, { signal: controller.signal }).then((blob) => {
+      if (!controller.signal.aborted) {
+        objectUrl = URL.createObjectURL(blob);
+        setPreview({ path: image.url, src: objectUrl });
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) setPreview({ path: image.url, src: null });
+    });
+
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [image.url, canPreview]);
+
+  const current = preview?.path === image.url ? preview : undefined;
+  if (current?.src) {
+    return <Image src={current.src} alt={image.title} className={className} fill unoptimized />;
+  }
+
+  return (
+    <span className="absolute inset-0 flex items-center justify-center text-sm text-white">
+      {canPreview ? (current ? "Không thể tải ảnh" : "Đang tải ảnh") : "Tệp DICOM"}
+    </span>
+  );
+}
 
 export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
   const { showToast } = useToast();
@@ -41,14 +76,13 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
   // Upload modal state
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadType, setUploadType] = useState<MedicalImageType>("panorex");
+  const [uploadType, setUploadType] = useState<MedicalImageType>("xray");
   const [uploadTooth, setUploadTooth] = useState<string>("");
   const [uploadRole, setUploadRole] = useState<"before" | "after" | "regular">("regular");
-  const [uploadDate, setUploadDate] = useState<string>(
-    new Date().toLocaleDateString("vi-VN")
-  );
+  const [uploadDate, setUploadDate] = useState("");
   const [uploadNotes, setUploadNotes] = useState("");
-  const [uploadPreview, setUploadPreview] = useState<string>("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadPreview, setUploadPreview] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   // Lightbox Zoom/Pan modal state
@@ -68,13 +102,10 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
     setIsLoading(true);
     try {
       const data = await patientService.getMedicalImages(patientId);
-      const list = Array.isArray(data) ? data : [];
-      setImages(list);
+      setImages(data);
       // Preselect default comparison pair if available
-      const before = list.find((img) => img.comparisonRole === "before");
-      const after = list.find((img) => img.comparisonRole === "after");
-      if (before) setBeforeImage(before);
-      if (after) setAfterImage(after);
+      setBeforeImage(data.find((img) => img.comparisonRole === "before") ?? null);
+      setAfterImage(data.find((img) => img.comparisonRole === "after") ?? null);
     } catch {
       showToast("Không thể tải danh sách phim X-quang.", "error");
     } finally {
@@ -86,54 +117,58 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
     loadImages();
   }, [loadImages]);
 
-  // Handle local file selection
+  useEffect(() => {
+    if (!uploadFile) {
+      setUploadPreview("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(uploadFile);
+    setUploadPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [uploadFile]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      showToast("Vui lòng chọn file hình ảnh hợp lệ (PNG, JPG, SVG).", "error");
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      showToast("Vui lòng chọn ảnh PNG hoặc JPEG.", "error");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setUploadPreview(result);
-      if (!uploadTitle) {
-        setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
-      }
-    };
-    reader.readAsDataURL(file);
+    setUploadFile(file);
+    if (!uploadTitle) setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
   };
 
   // Submit upload image
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadPreview) {
+    if (!uploadFile) {
       showToast("Vui lòng chọn tệp hình ảnh để tải lên.", "error");
       return;
     }
 
     setIsUploading(true);
     try {
-      const newImg = await patientService.uploadMedicalImage(patientId, {
-        patientId,
-        title: uploadTitle.trim() || "Phim chụp X-quang",
-        type: uploadType,
-        imageUrl: uploadPreview,
-        toothNumber: uploadTooth ? Number(uploadTooth) : undefined,
-        capturedDate: uploadDate || new Date().toLocaleDateString("vi-VN"),
-        notes: uploadNotes.trim() || undefined,
-        comparisonRole: uploadRole
-      });
+      const form = new FormData();
+      form.append("file", uploadFile);
+      form.append("title", uploadTitle.trim());
+      form.append("type", uploadType);
+      form.append("comparisonRole", uploadRole);
+      if (uploadTooth) form.append("toothNumber", uploadTooth);
+      if (uploadDate) form.append("capturedAt", `${uploadDate}T00:00:00+07:00`);
+      if (uploadNotes.trim()) form.append("notes", uploadNotes.trim());
+      const newImg = await patientService.uploadMedicalImage(patientId, form);
 
       setImages((prev) => [newImg, ...prev]);
+      if (newImg.comparisonRole === "before") setBeforeImage(newImg);
+      if (newImg.comparisonRole === "after") setAfterImage(newImg);
       showToast("Đã tải lên phim X-quang thành công.", "success");
       setIsUploadOpen(false);
       // Reset form
       setUploadTitle("");
-      setUploadPreview("");
+      setUploadFile(null);
       setUploadTooth("");
       setUploadNotes("");
       setUploadRole("regular");
@@ -218,39 +253,20 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
         >
           Tất cả ảnh ({images.length})
         </button>
-        <button
-          type="button"
-          onClick={() => setFilterType("panorex")}
-          className={`px-3 py-1.5 rounded-[var(--radius)] font-medium transition cursor-pointer whitespace-nowrap ${
-            filterType === "panorex"
-              ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
-              : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-          }`}
-        >
-          Toàn cảnh Panorex
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterType("periapical")}
-          className={`px-3 py-1.5 rounded-[var(--radius)] font-medium transition cursor-pointer whitespace-nowrap ${
-            filterType === "periapical"
-              ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
-              : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-          }`}
-        >
-          Chóp răng (Periapical)
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterType("intraoral")}
-          className={`px-3 py-1.5 rounded-[var(--radius)] font-medium transition cursor-pointer whitespace-nowrap ${
-            filterType === "intraoral"
-              ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
-              : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-          }`}
-        >
-          Trong miệng
-        </button>
+        {IMAGE_TYPES.map(({ type, label }) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => setFilterType(type)}
+            className={`px-3 py-1.5 rounded-[var(--radius)] font-medium transition cursor-pointer whitespace-nowrap ${
+              filterType === type
+                ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
+                : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg)]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
         <button
           type="button"
           onClick={() => setFilterType("comparison")}
@@ -299,13 +315,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
                   setIsInverted(false);
                 }}
               >
-                <Image
-                  src={img.imageUrl}
-                  alt={img.title}
-                  fill
-                  unoptimized
-                  className="w-full h-full object-contain group-hover:scale-102 transition duration-200"
-                />
+                <MedicalImagePreview image={img} className="w-full h-full object-contain group-hover:scale-102 transition duration-200" />
                 <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
                   <span className="px-3 py-1 rounded-[var(--radius)] bg-slate-900/80 text-white text-[12px] font-medium flex items-center gap-1.5 backdrop-blur-xs">
                     <Maximize2 className="w-3.5 h-3.5" />
@@ -347,7 +357,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
 
                   <div className="flex items-center gap-1.5 text-[var(--text-xs)] text-[var(--color-text-muted)] mt-1.5">
                     <Calendar className="w-3.5 h-3.5" />
-                    <span className="tabular-nums">Chụp ngày: {img.capturedDate}</span>
+                    <span className="tabular-nums">Chụp ngày: {formatDate(img.capturedAt ?? "")}</span>
                   </div>
 
                   {img.notes && (
@@ -433,7 +443,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
                 <input
                   type="file"
                   ref={fileInputRef}
-                  accept="image/*"
+                  accept="image/jpeg,image/png,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -465,7 +475,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
                       Bấm vào đây để chọn tệp ảnh từ máy
                     </p>
                     <p className="text-[var(--text-xs)] text-[var(--color-text-muted)] mt-1">
-                      Hỗ trợ định dạng PNG, JPG, JPEG, SVG hoặc chuẩn DICOM đã xuất ảnh
+                      Hỗ trợ ảnh PNG và JPEG (tối đa 15 MB)
                     </p>
                   </div>
                 )}
@@ -548,10 +558,9 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
                   </label>
                   <input
                     id="upload-img-date"
-                    type="text"
+                    type="date"
                     value={uploadDate}
                     onChange={(e) => setUploadDate(e.target.value)}
-                    placeholder="dd/MM/yyyy"
                     className="w-full px-3 py-2 text-[var(--text-sm)] border border-[var(--color-border-input)] rounded-[var(--radius)] bg-[var(--color-surface)] text-[var(--color-text)] tabular-nums"
                   />
                 </div>
@@ -604,7 +613,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
                 {lightboxImage.title}
               </h3>
               <p className="text-[12px] text-slate-400">
-                Chụp ngày: {lightboxImage.capturedDate} • {lightboxImage.toothNumber ? `Răng: ${lightboxImage.toothNumber}` : "Toàn hàm"}
+                Chụp ngày: {formatDate(lightboxImage.capturedAt ?? "")} • {lightboxImage.toothNumber ? `Răng: ${lightboxImage.toothNumber}` : "Toàn hàm"}
               </p>
             </div>
 
@@ -678,13 +687,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
               }}
               className="relative max-w-4xl max-h-[75vh] w-full h-[75vh]"
             >
-              <Image
-                src={lightboxImage.imageUrl}
-                alt={lightboxImage.title}
-                fill
-                unoptimized
-                className="w-full h-full object-contain select-none"
-              />
+              <MedicalImagePreview image={lightboxImage} className="w-full h-full object-contain select-none" />
             </div>
           </div>
         </div>
@@ -743,7 +746,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
                   <option value="">-- Đổi ảnh Trước --</option>
                   {images.map((img) => (
                     <option key={img.id} value={img.id}>
-                      {img.title} ({img.capturedDate})
+                      {img.title} ({formatDate(img.capturedAt ?? "")})
                     </option>
                   ))}
                 </select>
@@ -752,13 +755,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
               <div className="flex-1 relative flex items-center justify-center bg-black/40 rounded border border-slate-800 overflow-hidden">
                 {beforeImage ? (
                   <div className="relative w-full h-full min-h-[300px]">
-                    <Image
-                      src={beforeImage.imageUrl}
-                      alt="Ảnh trước can thiệp"
-                      fill
-                      unoptimized
-                      className="w-full h-full object-contain"
-                    />
+                    <MedicalImagePreview image={beforeImage} className="w-full h-full object-contain" />
                   </div>
                 ) : (
                   <p className="text-[13px] text-slate-500">Chưa chọn ảnh đối chiếu trước điều trị</p>
@@ -767,7 +764,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
 
               {beforeImage && (
                 <div className="mt-2 text-[12px] text-slate-400 flex items-center justify-between">
-                  <span>Chụp ngày: {beforeImage.capturedDate}</span>
+                  <span>Chụp ngày: {formatDate(beforeImage.capturedAt ?? "")}</span>
                   <span>{beforeImage.notes || "Không có ghi chú"}</span>
                 </div>
               )}
@@ -798,7 +795,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
                   <option value="">-- Đổi ảnh Sau --</option>
                   {images.map((img) => (
                     <option key={img.id} value={img.id}>
-                      {img.title} ({img.capturedDate})
+                      {img.title} ({formatDate(img.capturedAt ?? "")})
                     </option>
                   ))}
                 </select>
@@ -807,13 +804,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
               <div className="flex-1 relative flex items-center justify-center bg-black/40 rounded border border-slate-800 overflow-hidden">
                 {afterImage ? (
                   <div className="relative w-full h-full min-h-[300px]">
-                    <Image
-                      src={afterImage.imageUrl}
-                      alt="Ảnh sau can thiệp"
-                      fill
-                      unoptimized
-                      className="w-full h-full object-contain"
-                    />
+                    <MedicalImagePreview image={afterImage} className="w-full h-full object-contain" />
                   </div>
                 ) : (
                   <p className="text-[13px] text-slate-500">Chưa chọn ảnh đối chiếu sau điều trị</p>
@@ -822,7 +813,7 @@ export function MedicalImageGallery({ patientId }: MedicalImageGalleryProps) {
 
               {afterImage && (
                 <div className="mt-2 text-[12px] text-slate-400 flex items-center justify-between">
-                  <span>Chụp ngày: {afterImage.capturedDate}</span>
+                  <span>Chụp ngày: {formatDate(afterImage.capturedAt ?? "")}</span>
                   <span>{afterImage.notes || "Không có ghi chú"}</span>
                 </div>
               )}

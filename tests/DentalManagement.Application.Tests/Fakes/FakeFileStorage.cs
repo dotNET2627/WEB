@@ -20,6 +20,9 @@ internal sealed class FakeFileStorage : IFileStorage
         return key;
     }
 
+    public Task<Stream?> OpenReadAsync(string storageKey, CancellationToken cancellationToken) =>
+        Task.FromResult<Stream?>(Files.TryGetValue(storageKey, out var file) ? new MemoryStream(file.Content) : null);
+
     public Task DeleteAsync(string storageKey, CancellationToken cancellationToken)
     {
         if (ThrowOnDelete)

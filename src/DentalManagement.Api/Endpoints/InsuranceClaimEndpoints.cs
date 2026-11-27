@@ -26,6 +26,12 @@ public static class InsuranceClaimEndpoints
             ICommandHandler<CreateInsuranceClaimCommand, Result<Guid>> handler,
             CancellationToken ct) =>
         {
+            if (!Enum.IsDefined(req.InsuranceType))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["insuranceType"] = ["Loại bảo hiểm không hợp lệ."]
+                });
+
             var command = new CreateInsuranceClaimCommand(
                 req.PatientId,
                 user.ClinicId!.Value,

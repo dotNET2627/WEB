@@ -4,6 +4,12 @@ import type { ApiError } from "@/types/api";
 let inMemoryAccessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 let onSessionExpiredCallback: (() => void) | null = null;
+const SELECTED_CLINIC = "selectedClinicId";
+
+export function setSelectedClinic(clinicId: string | null): void {
+  if (clinicId) sessionStorage.setItem(SELECTED_CLINIC, clinicId);
+  else sessionStorage.removeItem(SELECTED_CLINIC);
+}
 
 export function setAccessToken(token: string | null): void {
   inMemoryAccessToken = token;
@@ -17,18 +23,29 @@ export function setOnSessionExpired(callback: () => void): void {
   onSessionExpiredCallback = callback;
 }
 
-export async function executeRefreshToken(): Promise<string | null> {
+export function executeRefreshToken(): Promise<string | null> {
+  refreshPromise ??= refreshAccessToken().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  const previousToken = inMemoryAccessToken;
   try {
+    const clinicId = sessionStorage.getItem(SELECTED_CLINIC);
     const response = await fetch(`${env.apiBaseUrl}/api/v1/auth/refresh-token`, {
       method: "POST",
       credentials: "include", // Sends HttpOnly refreshToken cookie (Path=/api/v1/auth)
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...(clinicId ? { "X-Clinic-Id": clinicId } : {})
       },
       cache: "no-store"
     });
 
+    if (inMemoryAccessToken !== previousToken) return inMemoryAccessToken;
     if (!response.ok) {
       setAccessToken(null);
       return null;
@@ -43,8 +60,8 @@ export async function executeRefreshToken(): Promise<string | null> {
     setAccessToken(null);
     return null;
   } catch {
-    setAccessToken(null);
-    return null;
+    if (inMemoryAccessToken === previousToken) setAccessToken(null);
+    return inMemoryAccessToken;
   }
 }
 
@@ -64,11 +81,15 @@ export class ApiClient {
     return this.request<T>(path, { ...init, method: "GET" });
   }
 
+  async getBlob(path: string, init?: RequestInit): Promise<Blob> {
+    return this.request(path, { ...init, method: "GET" }, false, (response) => response.blob());
+  }
+
   async post<TResponse, TBody>(path: string, body?: TBody, init?: RequestInit): Promise<TResponse> {
     return this.request<TResponse>(path, {
       ...init,
       method: "POST",
-      body: body !== undefined ? JSON.stringify(body) : undefined
+      body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined
     });
   }
 
@@ -92,16 +113,22 @@ export class ApiClient {
     });
   }
 
-  private async request<T>(path: string, init: RequestInit, isRetry = false): Promise<T> {
+  private async request<T>(
+    path: string,
+    init: RequestInit,
+    isRetry = false,
+    parse?: (response: Response) => Promise<T>
+  ): Promise<T> {
     const headers = new Headers(init.headers);
-    headers.set("Accept", "application/json");
+    if (!headers.has("Accept")) headers.set("Accept", "application/json");
 
-    if (init.body !== undefined && !headers.has("Content-Type")) {
+    if (init.body !== undefined && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
 
-    if (inMemoryAccessToken && !headers.has("Authorization")) {
-      headers.set("Authorization", `Bearer ${inMemoryAccessToken}`);
+    const requestToken = inMemoryAccessToken;
+    if (requestToken && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${requestToken}`);
     }
 
     let response: Response;
@@ -123,17 +150,13 @@ export class ApiClient {
     // Handle 401 Unauthorized with Single-Flight Mutex Promise
     const isAuthRoute = path.startsWith("/api/v1/auth/login") || path.startsWith("/api/v1/auth/refresh-token");
     if (response.status === 401 && !isRetry && !isAuthRoute) {
-      if (!refreshPromise) {
-        refreshPromise = executeRefreshToken().finally(() => {
-          refreshPromise = null;
-        });
-      }
-
-      const newToken = await refreshPromise;
+      const newToken = inMemoryAccessToken !== requestToken
+        ? inMemoryAccessToken
+        : await executeRefreshToken();
 
       if (newToken) {
         // Retry initial request with new access token
-        return this.request<T>(path, init, true);
+        return this.request<T>(path, init, true, parse);
       } else {
         onSessionExpiredCallback?.();
       }
@@ -194,7 +217,7 @@ export class ApiClient {
       return undefined as T;
     }
 
-    return response.json() as Promise<T>;
+    return parse ? parse(response) : response.json() as Promise<T>;
   }
 }
 

@@ -9,10 +9,16 @@ import {
 import { validateVietnamesePhone } from "@/lib/phone-utils";
 
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { success: false, error: "Đăng nhập bằng OTP hiện chưa mở. Vui lòng liên hệ phòng khám." },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const rawPhone = body?.phoneNumber || "";
-    const captchaToken = body?.captchaToken;
 
     // 1. Kiểm tra định dạng số điện thoại Việt Nam (+84 / 10 số)
     const phoneValidation = validateVietnamesePhone(rawPhone);
@@ -52,28 +58,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Kiểm tra CAPTCHA Token (ngăn chặn bot spam SMS)
-    // Nếu môi trường production yêu cầu CAPTCHA
-    if (process.env.NODE_ENV === "production" && !captchaToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Vui lòng hoàn thành xác thực CAPTCHA trước khi gửi mã."
-        },
-        { status: 400 }
-      );
-    }
-
     // 5. Sinh mã OTP ngẫu nhiên mật mã học (CSPRNG) và băm SHA-256 lưu trữ
     const otp = generateSecureOtp(6);
     storeOtp(normalizedPhone, otp);
     recordOtpRequest(normalizedPhone, clientIp);
 
-    // 6. Gửi OTP qua SMS Gateway / Zalo ZNS trong môi trường thực tế
-    // TODO: Tích hợp dịch vụ SMS Brandname hoặc Zalo ZNS chính thức của phòng khám
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[DEV OTP DISPATCH] SĐT: ${normalizedPhone} | Mã OTP: ${otp} | Hết hạn: 5 phút`);
-    }
+    console.log(`[DEV OTP DISPATCH] SĐT: ${normalizedPhone} | Mã OTP: ${otp} | Hết hạn: 5 phút`);
 
     // 7. PHẢN HỒI ĐỒNG NHẤT (Chống tấn công Account Enumeration)
     // Tuyệt đối không tiết lộ số này đã có hồ sơ tại phòng khám hay chưa

@@ -9,18 +9,19 @@ interface NavItem {
   href: string;
   label: string;
   requiredRole?: string[];
+  developmentOnly?: boolean;
 }
 
 const allItems: NavItem[] = [
-  { href: "/dashboard", label: "Tổng quan" },
-  { href: "/doctor/workspace", label: "Bàn khám bác sĩ", requiredRole: ["doctor", "superadmin", "clinicadmin", "admin"] },
+  { href: "/dashboard", label: "Tổng quan", developmentOnly: true },
+  { href: "/doctor/workspace", label: "Bàn khám bác sĩ", requiredRole: ["doctor", "superadmin", "clinicadmin", "admin"], developmentOnly: true },
   { href: "/reception", label: "Tiếp đón & Check-in" },
   { href: "/patients", label: "Bệnh nhân" },
   { href: "/appointments", label: "Lịch hẹn" },
   { href: "/treatment-plans", label: "Phác đồ điều trị" },
   { href: "/services", label: "Danh mục dịch vụ" },
   { href: "/promotions", label: "Khuyến mãi" },
-  { href: "/prescriptions", label: "Đơn thuốc" },
+  { href: "/prescriptions", label: "Đơn thuốc", developmentOnly: true },
   { href: "/invoices", label: "Hóa đơn & Thu ngân" },
   { href: "/doctors", label: "Bác sĩ & Ca trực" },
   { href: "/clinics", label: "Chi nhánh" },
@@ -39,6 +40,7 @@ export function Sidebar() {
   const isSuperAdmin = userRoles.includes("superadmin");
 
   const visibleItems = allItems.filter((item) => {
+    if (item.developmentOnly && process.env.NODE_ENV === "production") return false;
     if (!item.requiredRole || isSuperAdmin) return true;
     if (process.env.NODE_ENV !== "production") return true;
     return item.requiredRole.some((role) => userRoles.includes(role));

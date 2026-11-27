@@ -6,6 +6,8 @@ using DentalManagement.Api.HostedServices;
 using DentalManagement.Api.Security;
 using DentalManagement.Api.Services;
 using DentalManagement.Application.Abstractions.Services;
+using DentalManagement.Application.Insurance.UpdateClaimStatus;
+using DentalManagement.Domain.Insurance;
 using DentalManagement.Domain.Treatments;
 using DentalManagement.Infrastructure.Security;
 using FluentValidation;
@@ -28,6 +30,8 @@ public static class ServiceCollectionExtensions
         {
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<TreatmentPlanStatus>(allowIntegerValues: false));
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<TreatmentStepStatus>(allowIntegerValues: false));
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<InsuranceType>());
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<ClaimStatusAction>());
         });
         services.AddHttpContextAccessor();
 
@@ -47,11 +51,19 @@ public static class ServiceCollectionExtensions
 
         // JWT Authentication
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
-        if (string.IsNullOrWhiteSpace(jwtOptions.SecretKey))
+        const string developmentKey = "DentalManagementEnterpriseSecretKeyWithMoreThan256BitsLength2026!";
+        if (environment.IsDevelopment() && string.IsNullOrWhiteSpace(jwtOptions.SecretKey))
         {
-            jwtOptions.SecretKey = "DentalManagementEnterpriseSecretKeyWithMoreThan256BitsLength2026!";
+            jwtOptions.SecretKey = developmentKey;
         }
 
+        if (string.IsNullOrWhiteSpace(jwtOptions.SecretKey) || Encoding.UTF8.GetByteCount(jwtOptions.SecretKey) < 32
+            || (!environment.IsDevelopment() && (jwtOptions.SecretKey == developmentKey || jwtOptions.SecretKey.StartsWith("ChangeMe", StringComparison.OrdinalIgnoreCase))))
+        {
+            throw new InvalidOperationException("Configure Jwt:SecretKey with a unique key of at least 32 bytes.");
+        }
+
+        services.PostConfigure<JwtOptions>(options => options.SecretKey = jwtOptions.SecretKey);
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SecretKey));
 
         services.AddAuthentication(options =>
@@ -99,13 +111,13 @@ public static class ServiceCollectionExtensions
                         QueueLimit = 0
                     }));
 
-            // Refresh token rate limit: 10 requests / 1 minute per IP
+            // Refresh requests from staff in one clinic can share a single IP.
             options.AddPolicy("auth-refresh", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 10,
+                        PermitLimit = 60,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 0

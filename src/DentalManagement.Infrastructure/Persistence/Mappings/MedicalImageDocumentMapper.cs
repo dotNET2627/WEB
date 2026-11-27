@@ -20,6 +20,7 @@ internal static class MedicalImageDocumentMapper
         Notes = image.Notes,
         CapturedAt = image.CapturedAt,
         UploadedBy = image.UploadedBy,
+        ComparisonRole = image.ComparisonRole,
         CreatedAt = image.CreatedAt,
         UpdatedAt = image.UpdatedAt
     };
@@ -42,7 +43,8 @@ internal static class MedicalImageDocumentMapper
             document.ToothNumber,
             document.Notes,
             document.CapturedAt,
-            document.UploadedBy);
+            document.UploadedBy,
+            document.ComparisonRole);
 
         image.SetAuditDates(document.CreatedAt, document.UpdatedAt);
         return image;
