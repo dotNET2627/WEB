@@ -1,16 +1,37 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createPatientSession } from "@/lib/otp-security";
+import { verifyGoogleIdToken } from "@/lib/google-auth";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // NextRequest import
   try {
-    // Giả lập xác thực OAuth Google token / ID Token phía server
-    // Trong môi trường production, tích hợp google-auth-library verifyIdToken
+    const body = await request.json().catch(() => ({}));
+    const idToken = typeof body?.idToken === "string" ? body.idToken : null;
+
     const isProduction = process.env.NODE_ENV === "production";
 
-    // Khởi tạo phiên làm việc bảo mật cho bệnh nhân đăng nhập bằng Google
-    const googleEmail = "patient.clinic@gmail.com";
-    const googleName = "Bệnh nhân Google";
-    const { sessionId } = createPatientSession(googleEmail);
+    let googleEmail = "patient.clinic@gmail.com";
+    let googleName = "Bệnh nhân Google";
+
+    if (idToken) {
+      const verified = await verifyGoogleIdToken(idToken);
+      if (!verified) {
+        return NextResponse.json(
+          { success: false, error: "Mã xác thực Google không hợp lệ hoặc đã hết hạn." },
+          { status: 401 }
+        );
+      }
+      googleEmail = verified.email;
+      googleName = verified.name;
+    } else if (isProduction) {
+      return NextResponse.json(
+        { success: false, error: "Thiếu mã xác thực Google. Vui lòng đăng nhập lại." },
+        { status: 400 }
+      );
+    }
+    // Dev fallback: mock user when no client ID / no token provided
+
+    const { sessionId } = await createPatientSession({ email: googleEmail });
 
     const user = {
       id: "patient-google-" + Date.now().toString().slice(-6),
@@ -33,7 +54,6 @@ export async function POST() {
       { status: 200 }
     );
 
-    // Cấp Cookie HttpOnly an toàn
     response.cookies.set({
       name: "patient_session",
       value: sessionId,

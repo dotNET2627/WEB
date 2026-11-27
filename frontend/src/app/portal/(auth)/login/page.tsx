@@ -72,7 +72,7 @@ function PatientLoginForm() {
     if (e) e.preventDefault();
 
     if (!consentAgreed) {
-      setErrorMessage("Vui lòng đồng ý với Điều khoản sử dụng và Chính sách bảo mật.");
+      setErrorMessage("Vui lòng xác nhận đồng ý với Điều khoản sử dụng và Chính sách bảo mật.");
       checkboxRef.current?.focus();
       return;
     }
@@ -129,19 +129,65 @@ function PatientLoginForm() {
     }
   };
 
+  const loadGisScript = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (typeof window === "undefined") return reject(new Error("No window"));
+      if ((window as unknown as { google?: { accounts?: { id?: { initialize: (o: unknown) => void; prompt: () => void } } } }).google?.accounts?.id) return resolve();
+      const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+      if (existing) {
+        existing.addEventListener("load", () => resolve());
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load Google Identity Services"));
+      document.head.appendChild(script);
+    });
+  };
+
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     setErrorMessage(null);
 
-    try {
-      await loginWithGoogle();
-      window.location.href = returnUrl;
-    } catch (err) {
-      if (err instanceof Error) {
-        setErrorMessage(err.message);
-      } else {
-        setErrorMessage("Không thể đăng nhập bằng Google. Vui lòng thử lại sau.");
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+    // Nếu không cấu hình Client ID -> dùng luồng mock (dev)
+    if (!clientId) {
+      try {
+        await loginWithGoogle();
+        window.location.href = returnUrl;
+      } catch (err) {
+        if (err instanceof Error) setErrorMessage(err.message);
+        else setErrorMessage("Không thể đăng nhập bằng Google. Vui lòng thử lại sau.");
+        setIsGoogleLoading(false);
       }
+      return;
+    }
+
+    try {
+      await loadGisScript();
+      const google = (window as unknown as { google?: { accounts: { id: { initialize: (o: unknown) => void; prompt: () => void } } } }).google;
+      google!.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: { credential?: string }) => {
+          try {
+            if (!response?.credential) throw new Error("Không nhận được mã xác thực Google.");
+            await loginWithGoogle(response.credential);
+            window.location.href = returnUrl;
+          } catch (err) {
+            if (err instanceof Error) setErrorMessage(err.message);
+            else setErrorMessage("Không thể đăng nhập bằng Google. Vui lòng thử lại sau.");
+            setIsGoogleLoading(false);
+          }
+        }
+      });
+      google!.accounts.id.prompt();
+    } catch (err) {
+      if (err instanceof Error) setErrorMessage(err.message);
+      else setErrorMessage("Không thể tải Google Identity Services.");
       setIsGoogleLoading(false);
     }
   };

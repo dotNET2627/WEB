@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Khởi tạo Session Server-side độc lập cho Bệnh nhân
     // Tuyệt đối không nhận patientId từ client! Server tự sinh ID phiên và phân quyền
-    const { sessionId } = createPatientSession(normalizedPhone);
+    const { sessionId } = await createPatientSession({ phone: normalizedPhone });
 
     const isProduction = process.env.NODE_ENV === "production";
 

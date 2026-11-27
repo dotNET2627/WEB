@@ -1,8 +1,61 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// =========================================================================
+// DANH SÁCH CÁC ĐƯỜNG LINK ĐÃ CÓ TRONG HỆ THỐNG (KNOWN ROUTES)
+// =========================================================================
+
+// Các đường dẫn khớp chính xác
+const EXACT_KNOWN_ROUTES = new Set([
+  "/",
+  "/login",
+  "/forgot-password",
+  "/portal",
+  "/portal/login",
+  "/portal/booking",
+  "/portal/dashboard",
+  "/admin",
+  "/admin/login",
+  "/admin/dashboard",
+  "/dashboard",
+]);
+
+// Các tiền tố đường dẫn hợp lệ của từng phân hệ
+const KNOWN_ROUTE_PREFIXES = [
+  // 1. Phân hệ Quản trị hệ thống (Admin Portal)
+  "/admin/dashboard",
+  "/admin/users",
+  "/admin/roles",
+  "/admin/clinics",
+  "/admin/audit-logs",
+  "/admin/settings",
+
+  // 2. Phân hệ Bệnh nhân (Patient Portal)
+  "/portal/dashboard",
+
+  // 3. Phân hệ Nghiệp vụ Phòng khám (Clinic Staff Portal)
+  "/appointments",
+  "/clinics",
+  "/doctor",
+  "/doctors",
+  "/insurance",
+  "/inventory",
+  "/invoices",
+  "/patients",
+  "/prescriptions",
+  "/settings",
+  "/treatment-plans",
+];
+
 const CLINIC_PUBLIC_PATHS = ["/login", "/forgot-password"];
 const PATIENT_PUBLIC_PATHS = ["/portal", "/portal/login", "/portal/booking"];
+
+function isKnownRoute(pathname: string): boolean {
+  if (EXACT_KNOWN_ROUTES.has(pathname)) return true;
+  return KNOWN_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,7 +63,22 @@ export function middleware(request: NextRequest) {
   const authRole = request.cookies.get("auth_role")?.value?.toLowerCase();
 
   // =========================================================================
-  // 1. VÙNG 1: ADMIN PORTAL (/admin, /admin/*)
+  // 0. CHUYỂN HƯỚNG TRANG CHỦ (localhost:3000 / "/") VÀO CỔNG THÔNG TIN (/portal)
+  // =========================================================================
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/portal", request.url));
+  }
+
+  // =========================================================================
+  // 1. KIỂM TRA ĐƯỜNG LINK CÓ THUỘC CÁC ĐƯỜNG LINK ĐÃ CÓ KHÔNG
+  // Nếu không thuộc các đường link đã có -> Cho qua để Next.js render trang lỗi 404
+  // =========================================================================
+  if (!isKnownRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  // =========================================================================
+  // 2. VÙNG ADMIN PORTAL (/admin, /admin/*)
   // =========================================================================
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   if (isAdminRoute) {
@@ -37,7 +105,7 @@ export function middleware(request: NextRequest) {
   }
 
   // =========================================================================
-  // 2. VÙNG 2: PATIENT PORTAL (/portal, /portal/*)
+  // 3. VÙNG PATIENT PORTAL (/portal, /portal/*)
   // =========================================================================
   const isPatientRoute = pathname === "/portal" || pathname.startsWith("/portal/");
   if (isPatientRoute) {
@@ -76,7 +144,7 @@ export function middleware(request: NextRequest) {
   }
 
   // =========================================================================
-  // 3. VÙNG 3: CLINIC STAFF PORTAL (Tất cả các route còn lại: /*)
+  // 4. VÙNG CLINIC STAFF PORTAL (Tất cả các route hợp lệ còn lại của phòng khám)
   // =========================================================================
   const isClinicPublic = CLINIC_PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
@@ -117,4 +185,3 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|images|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };
-

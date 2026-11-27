@@ -20,8 +20,8 @@ import {
   _setPhoneRateLimitRecordForTesting
 } from "../../src/lib/otp-security.ts";
 
-test.beforeEach(() => {
-  _resetStoresForTesting();
+test.beforeEach(async () => {
+  await _resetStoresForTesting();
 });
 
 test("1. Chuẩn hóa & Xác thực số điện thoại di động Việt Nam (+84)", async (t) => {
@@ -197,8 +197,8 @@ test("4. Rate Limiting đa chiều (Theo Số điện thoại & IP)", async (t) 
 test("5. Quản lý Phiên làm việc (Session) Server-side độc lập & Phân quyền", async (t) => {
   const phone = "0912345678";
 
-  await t.test("Tạo Session an toàn, không nhận patientId từ client", () => {
-    const { sessionId, session } = createPatientSession(phone);
+  await t.test("Tạo Session an toàn, không nhận patientId từ client", async () => {
+    const { sessionId, session } = await createPatientSession({ phone });
     assert.ok(sessionId.length >= 32, "Session token phải đủ độ dài bảo mật");
     assert.equal(session.phone, phone);
     assert.equal(session.role, "patient");
@@ -206,11 +206,11 @@ test("5. Quản lý Phiên làm việc (Session) Server-side độc lập & Phâ
     assert.ok(session.expiresAt > Date.now());
 
     // Kiểm tra truy vấn session
-    const retrieved = getPatientSession(sessionId);
+    const retrieved = await getPatientSession(sessionId);
     assert.deepEqual(retrieved, session);
 
     // Kiểm tra hủy session
-    revokePatientSession(sessionId);
-    assert.equal(getPatientSession(sessionId), null);
+    await revokePatientSession(sessionId);
+    assert.equal(await getPatientSession(sessionId), null);
   });
 });

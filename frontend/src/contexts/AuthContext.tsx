@@ -11,7 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<User>;
   loginWithPhoneOtp: (phoneNumber: string, otp: string) => Promise<User>;
-  loginWithGoogle: () => Promise<User>;
+  loginWithGoogle: (idToken?: string) => Promise<User>;
   logout: (redirectPath?: string) => Promise<void>;
   switchClinic: (targetClinicId: string) => Promise<void>;
   hasPermission: (permission: string) => boolean;
@@ -70,8 +70,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async (redirectPath?: string) => {
     clearRefreshTimer();
+    const isPatient = user?.roles?.some((r) => r.toLowerCase() === "patient") ?? false;
     try {
-      await apiClient.post("/api/v1/auth/revoke-token");
+      if (isPatient) {
+        // Hủy session bệnh nhân server-side (in-memory) và xóa cookie
+        await fetch("/api/auth/patient/logout", {
+          method: "POST",
+          credentials: "include"
+        }).catch(() => undefined);
+      } else {
+        await apiClient.post("/api/v1/auth/revoke-token");
+      }
     } catch {
       // Ignore network failures during logout
     } finally {
@@ -95,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push(target);
       }
     }
-  }, [clearRefreshTimer, router]);
+  }, [clearRefreshTimer, router, user]);
 
   // Initial session restoration on mount
   useEffect(() => {
@@ -208,10 +217,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return patientUser;
   }, []);
 
-  const loginWithGoogle = useCallback(async (): Promise<User> => {
+  const loginWithGoogle = useCallback(async (idToken?: string): Promise<User> => {
     const response = await fetch("/api/auth/google", {
       method: "POST",
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(idToken ? { idToken } : {})
     });
 
     const data = await response.json().catch(() => ({}));

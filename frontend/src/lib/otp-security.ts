@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import { patientSessionStore } from "./patient-session-store.ts";
+import type { PatientSession } from "./patient-session-store.ts";
 
 /**
  * Cấu hình bảo mật OTP và Rate Limiting
@@ -32,20 +34,10 @@ interface RateLimitRecord {
   lastRequestedAt: number;
 }
 
-interface PatientSession {
-  sessionId: string;
-  phone: string;
-  patientId: string;
-  role: "patient";
-  createdAt: number;
-  expiresAt: number;
-}
-
 // In-memory thread-safe stores (hỗ trợ scale sang Redis khi cần)
 const otpStore = new Map<string, OtpRecord>();
 const phoneRateLimitStore = new Map<string, RateLimitRecord>();
 const ipRateLimitStore = new Map<string, RateLimitRecord>();
-const sessionStore = new Map<string, PatientSession>();
 
 // Dọn dẹp dữ liệu hết hạn định kỳ
 function cleanupExpiredRecords() {
@@ -53,11 +45,6 @@ function cleanupExpiredRecords() {
   for (const [phone, record] of otpStore.entries()) {
     if (record.expiresAt <= now || record.isInvalidated) {
       otpStore.delete(phone);
-    }
-  }
-  for (const [sessionId, session] of sessionStore.entries()) {
-    if (session.expiresAt <= now) {
-      sessionStore.delete(sessionId);
     }
   }
 }
@@ -235,46 +222,60 @@ export function verifyOtp(phone: string, inputOtp: string): VerifyOtpResult {
  * Tạo Session Server-side cho bệnh nhân sau khi xác thực OTP thành công.
  * Tuyệt đối không nhận patientId từ client! Server tự sinh ID phiên và liên kết hồ sơ.
  */
-export function createPatientSession(phone: string): { sessionId: string; session: PatientSession } {
+export interface CreatePatientSessionParams {
+  phone?: string | null;
+  email?: string | null;
+}
+
+/**
+ * Tạo Session Server-side cho bệnh nhân sau khi xác thực thành công.
+ * Tách biệt `phone` và `email` để hỗ trợ nhiều phương thức đăng nhập (OTP SĐT / Google).
+ * Tuyệt đối không nhận patientId từ client! Server tự sinh ID phiên và liên kết hồ sơ.
+ */
+export async function createPatientSession(params: CreatePatientSessionParams): Promise<{ sessionId: string; session: PatientSession }> {
   cleanupExpiredRecords();
+  const phone = params.phone?.trim() || null;
+  const email = params.email?.trim() || null;
+
+  if (!phone && !email) {
+    throw new Error("createPatientSession requires at least a phone or an email.");
+  }
+
   const sessionId = crypto.randomBytes(32).toString("hex");
   const now = Date.now();
   // Session có thời hạn 7 ngày
   const expiresAt = now + 7 * 24 * 60 * 60 * 1000;
 
-  // Giả lập ID bệnh nhân tạo từ hash số điện thoại (hoặc ID từ MongoDB)
-  const patientId = "pat_" + crypto.createHash("sha256").update(phone).digest("hex").slice(0, 16);
+  // Sinh ID bệnh nhân từ phone (ưu tiên) hoặc email
+  const identitySeed = phone || email!;
+  const patientId = "pat_" + crypto.createHash("sha256").update(identitySeed).digest("hex").slice(0, 16);
 
   const session: PatientSession = {
     sessionId,
     phone,
+    email,
     patientId,
     role: "patient",
     createdAt: now,
     expiresAt
   };
 
-  sessionStore.set(sessionId, session);
+  await patientSessionStore.set(session);
   return { sessionId, session };
 }
 
 /**
  * Lấy thông tin Session hợp lệ từ sessionId trong HttpOnly cookie
  */
-export function getPatientSession(sessionId: string): PatientSession | null {
-  const session = sessionStore.get(sessionId);
-  if (!session || session.expiresAt <= Date.now()) {
-    if (session) sessionStore.delete(sessionId);
-    return null;
-  }
-  return session;
+export async function getPatientSession(sessionId: string): Promise<PatientSession | null> {
+  return patientSessionStore.get(sessionId);
 }
 
 /**
  * Hủy Session khi bệnh nhân đăng xuất
  */
-export function revokePatientSession(sessionId: string): void {
-  sessionStore.delete(sessionId);
+export async function revokePatientSession(sessionId: string): Promise<void> {
+  await patientSessionStore.delete(sessionId);
 }
 
 /**
@@ -289,11 +290,11 @@ export function verifyCaptchaChallenge(solution: string, expectedAnswer: string)
 /**
  * Reset toàn bộ stores (Dành riêng cho Unit Testing)
  */
-export function _resetStoresForTesting(): void {
+export async function _resetStoresForTesting(): Promise<void> {
   otpStore.clear();
   phoneRateLimitStore.clear();
   ipRateLimitStore.clear();
-  sessionStore.clear();
+  await patientSessionStore.clear();
 }
 
 /**

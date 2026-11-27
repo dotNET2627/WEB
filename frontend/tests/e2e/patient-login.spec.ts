@@ -7,6 +7,7 @@ test.describe("Cổng đăng nhập Bệnh nhân (/portal/login) - Tiêu chuẩn
 
   test("1. Kiểm tra an ninh: Không để lộ demo, bypass OTP, hay liên kết nội bộ staff/admin", async ({ page }) => {
     await page.goto(TARGET_URL);
+    await page.waitForLoadState("networkidle");
 
     const content = await page.content();
 
@@ -17,8 +18,8 @@ test.describe("Cổng đăng nhập Bệnh nhân (/portal/login) - Tiêu chuẩn
     expect(content).not.toContain("Điền nhanh mã");
 
     // 2. Không có liên kết tới cổng nội bộ
-    expect(page.locator('a[href="/login"]')).toHaveCount(0);
-    expect(page.locator('a[href="/admin/login"]')).toHaveCount(0);
+    expect(await page.locator('a[href="/login"]').count()).toBe(0);
+    expect(await page.locator('a[href="/admin/login"]').count()).toBe(0);
     expect(content).not.toContain("Cổng Bác sĩ");
     expect(content).not.toContain("SuperAdmin");
   });
@@ -67,14 +68,16 @@ test.describe("Cổng đăng nhập Bệnh nhân (/portal/login) - Tiêu chuẩn
     await expect(submitBtn).toContainText("Nhận mã xác thực OTP");
 
     // Bấm khi chưa tick đồng thuận -> Phải báo lỗi
+    await page.fill("#patient-phone", "0912 345 678");
     await submitBtn.click();
-    const alertBox = page.locator('[role="alert"]');
+    const alertBox = page.locator('div[role="alert"].bg-red-50');
     await expect(alertBox).toBeVisible();
     await expect(alertBox).toContainText("Vui lòng xác nhận đồng ý với Điều khoản");
   });
 
   test("4. Luồng gửi OTP: Chuẩn hóa SĐT, Chống dò quét (Anti-Enumeration) & Màn hình nhập 6 số", async ({ page }) => {
     await page.goto(TARGET_URL);
+    await page.waitForLoadState("networkidle");
 
     // 1. Nhập số điện thoại hợp lệ và tick consent
     await page.fill("#patient-phone", "0912 345 678");
