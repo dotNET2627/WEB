@@ -4,5 +4,6 @@ public enum PrescriptionStatus
 {
     Draft,
     Issued,
+    Dispensed,
     Cancelled
 }

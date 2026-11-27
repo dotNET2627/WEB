@@ -15,9 +15,15 @@ import {
 import { Drawer } from "@/components/ui/drawer";
 import { FormField } from "@/components/ui/form-field";
 import { useToast } from "@/components/ui/toast";
+import { useAuth } from "@/hooks/useAuth";
+import { inventoryService } from "@/services/inventory-service";
+import { prescriptionService } from "@/services/prescription-service";
+import type { InventoryItem } from "@/types/inventory";
+import type { PrescriptionDto, PrescriptionStatus } from "@/types/prescription";
 
 interface PrescribedMedication {
   id: string;
+  inventoryItemId?: string | null;
   name: string;
   dosage: string;
   quantity: number;
@@ -33,10 +39,36 @@ interface Prescription {
   patientCode: string;
   doctorName: string;
   createdDate: string;
+  rawCreatedAt: string;
   diagnosis: string;
   medications: PrescribedMedication[];
-  status: "signed" | "draft";
+  status: PrescriptionStatus;
   medicalNotes?: string;
+}
+
+function mapDtoToView(dto: PrescriptionDto): Prescription {
+  return {
+    id: dto.id,
+    code: dto.code,
+    patientId: dto.patientId,
+    patientName: dto.patientName,
+    patientCode: dto.patientCode ?? "—",
+    doctorName: dto.doctorName,
+    createdDate: new Date(dto.createdAt).toLocaleString("vi-VN"),
+    rawCreatedAt: dto.createdAt,
+    diagnosis: dto.diagnosis,
+    status: dto.status,
+    medicalNotes: dto.medicalNotes ?? undefined,
+    medications: dto.items.map((item, idx) => ({
+      id: `${dto.id}-${idx}`,
+      inventoryItemId: item.inventoryItemId,
+      name: item.medicationName,
+      dosage: item.dosage,
+      quantity: item.quantity,
+      unit: item.unit,
+      instructions: item.instructions
+    }))
+  };
 }
 
 const COMMON_DRUGS = [
@@ -50,72 +82,26 @@ const COMMON_DRUGS = [
   { name: "Nước súc miệng Chlorhexidine 0.12%", type: "Sát khuẩn khoang miệng", defaultUnit: "Chai", defaultQty: 1, defaultMorning: 1, defaultNoon: 0, defaultAfternoon: 0, defaultEvening: 1, defaultMeal: "Súc miệng 15ml trong 30 giây", allergyGroup: "chlorhexidine" }
 ];
 
-const INITIAL_PRESCRIPTIONS: Prescription[] = [
-  {
-    id: "pres-1",
-    code: "DON-2026-0042",
-    patientId: "pat-001",
-    patientName: "Trần Minh Quang",
-    patientCode: "BN-2026-0891",
-    doctorName: "BS. Nguyễn Văn Toàn",
-    createdDate: "16/10/2026 09:15",
-    diagnosis: "Viêm tủy cấp răng R46 - Điều trị tủy đợt 1",
-    status: "signed",
-    medicalNotes: "Bệnh nhân dị ứng Penicillin - Dùng Rodogyl thay thế",
-    medications: [
-      {
-        id: "m-1",
-        name: "Rodogyl (Spiramycine + Metronidazole)",
-        dosage: "Sáng: 2 - Trưa: 0 - Chiều: 0 - Tối: 2 (Viên)",
-        quantity: 14,
-        unit: "Viên",
-        instructions: "Uống sau ăn no, kiêng bia rượu"
-      },
-      {
-        id: "m-2",
-        name: "Paracetamol 500mg (Panadol)",
-        dosage: "Sáng: 1 - Trưa: 0 - Chiều: 0 - Tối: 1 (Viên)",
-        quantity: 10,
-        unit: "Viên",
-        instructions: "Uống khi đau buốt (cách tối thiểu 4-6h)"
-      }
-    ]
-  },
-  {
-    id: "pres-2",
-    code: "DON-2026-0039",
-    patientId: "pat-004",
-    patientName: "Nguyễn Thị Thảo",
-    patientCode: "BN-2026-0740",
-    doctorName: "BS. Hoàng Nam",
-    createdDate: "16/10/2026 14:30",
-    diagnosis: "Viêm nướu nha chu mạn tính",
-    status: "signed",
-    medications: [
-      {
-        id: "m-3",
-        name: "Nước súc miệng Chlorhexidine 0.12%",
-        dosage: "Sáng: 1 - Trưa: 0 - Chiều: 0 - Tối: 1 (Chai)",
-        quantity: 1,
-        unit: "Chai",
-        instructions: "Súc miệng 15ml trong 30 giây rồi nhổ bỏ"
-      }
-    ]
-  }
-];
-
 function PrescriptionsContent() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const clinicId = user?.activeClinicId;
 
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>(INITIAL_PRESCRIPTIONS);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [inventoryDrugs, setInventoryDrugs] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [dispensingId, setDispensingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState<"today" | "all">("today");
+  const [dateFilter, setDateFilter] = useState<"today" | "all">("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Form Kê đơn
+  const [patientIdInput, setPatientIdInput] = useState(
+    searchParams.get("patientId") || "11111111-1111-1111-1111-111111111111"
+  );
   const [patientName, setPatientName] = useState(searchParams.get("patientName") || "");
   const [patientCode, setPatientCode] = useState(searchParams.get("patientCode") || "");
   const [diagnosis, setDiagnosis] = useState("");
@@ -123,6 +109,7 @@ function PrescriptionsContent() {
   const [selectedMedications, setSelectedMedications] = useState<PrescribedMedication[]>([]);
 
   // Drug selector
+  const [chosenInventoryId, setChosenInventoryId] = useState<string>("");
   const [chosenDrug, setChosenDrug] = useState(COMMON_DRUGS[0].name);
   const [drugQty, setDrugQty] = useState(COMMON_DRUGS[0].defaultQty);
   const [drugUnit, setDrugUnit] = useState(COMMON_DRUGS[0].defaultUnit);
@@ -132,6 +119,27 @@ function PrescriptionsContent() {
   const [eveningDose, setEveningDose] = useState(COMMON_DRUGS[0].defaultEvening);
   const [mealTiming, setMealTiming] = useState(COMMON_DRUGS[0].defaultMeal);
   const [allergyWarning, setAllergyWarning] = useState<string | null>(null);
+
+  const loadData = React.useCallback(async () => {
+    if (!clinicId) return;
+    setLoading(true);
+    try {
+      const [presList, invItems] = await Promise.all([
+        prescriptionService.list(),
+        inventoryService.listItems()
+      ]);
+      setPrescriptions(presList.map(mapDtoToView));
+      setInventoryDrugs(invItems.filter((i) => i.isActive));
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Không thể tải danh sách đơn thuốc.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [clinicId, showToast]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   useEffect(() => {
     const pName = searchParams.get("patientName");
@@ -167,9 +175,22 @@ function PrescriptionsContent() {
     }
   }, [chosenDrug, medicalNotes]);
 
-  const handleSelectDrug = (drugName: string) => {
-    setChosenDrug(drugName);
-    const found = COMMON_DRUGS.find((d) => d.name === drugName);
+  const handleSelectDrug = (value: string) => {
+    if (value.startsWith("inv:")) {
+      const invId = value.slice(4);
+      const inv = inventoryDrugs.find((i) => i.id === invId);
+      if (inv) {
+        setChosenInventoryId(inv.id);
+        setChosenDrug(inv.name);
+        setDrugUnit(inv.unit);
+        setDrugQty(10);
+      }
+      return;
+    }
+
+    setChosenInventoryId("");
+    setChosenDrug(value);
+    const found = COMMON_DRUGS.find((d) => d.name === value);
     if (found) {
       setDrugQty(found.defaultQty);
       setDrugUnit(found.defaultUnit);
@@ -191,6 +212,7 @@ function PrescriptionsContent() {
 
     const newMed: PrescribedMedication = {
       id: `med-${Date.now()}`,
+      inventoryItemId: chosenInventoryId || null,
       name: chosenDrug,
       dosage: dosageStr,
       quantity: drugQty,
@@ -205,49 +227,78 @@ function PrescriptionsContent() {
     setSelectedMedications(selectedMedications.filter((m) => m.id !== id));
   };
 
-  const handleSavePrescription = (status: "signed" | "draft") => {
+  const handleSavePrescription = async (status: "signed" | "draft") => {
     if (!patientName || selectedMedications.length === 0) {
       showToast("Vui lòng nhập tên bệnh nhân và kê ít nhất 1 loại thuốc.", "warning");
       return;
     }
 
-    const newPrescription: Prescription = {
-      id: `pres-${Date.now()}`,
-      code: `DON-2026-0${prescriptions.length + 40}`,
-      patientId: `pat-${Date.now()}`,
-      patientName,
-      patientCode: patientCode || `BN-2026-0${Math.floor(100 + Math.random() * 900)}`,
-      doctorName: "Bác sĩ Điều trị (Đã ký)",
-      createdDate: new Date().toLocaleString("vi-VN"),
-      diagnosis: diagnosis || "Điều trị nha khoa",
-      medications: selectedMedications,
-      status,
-      medicalNotes
-    };
+    try {
+      await prescriptionService.create({
+        patientId: patientIdInput || "11111111-1111-1111-1111-111111111111",
+        patientName,
+        patientCode: patientCode || undefined,
+        doctorId: user?.id,
+        doctorName: user?.fullName || "Bác sĩ Điều trị",
+        diagnosis: diagnosis || "Điều trị nha khoa",
+        medicalNotes: medicalNotes || undefined,
+        isDraft: status === "draft",
+        items: selectedMedications.map((m) => ({
+          inventoryItemId: m.inventoryItemId ?? null,
+          medicationName: m.name,
+          dosage: m.dosage,
+          quantity: m.quantity,
+          unit: m.unit,
+          instructions: m.instructions
+        }))
+      });
 
-    setPrescriptions([newPrescription, ...prescriptions]);
-    setIsCreateOpen(false);
-    showToast(
-      status === "signed"
-        ? `Đã ký và phát hành đơn thuốc ${newPrescription.code}.`
-        : `Đã lưu bản nháp đơn thuốc ${newPrescription.code}.`,
-      "success"
-    );
+      setIsCreateOpen(false);
+      showToast(
+        status === "signed"
+          ? "Đã ký và phát hành đơn thuốc thành công."
+          : "Đã lưu bản nháp đơn thuốc.",
+        "success"
+      );
 
-    // Reset form
-    setPatientName("");
-    setDiagnosis("");
-    setMedicalNotes("");
-    setSelectedMedications([]);
+      setPatientName("");
+      setDiagnosis("");
+      setMedicalNotes("");
+      setSelectedMedications([]);
+      await loadData();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Không thể lưu đơn thuốc.", "error");
+    }
   };
 
+  const handleDispensePrescription = async (pres: Prescription) => {
+    setDispensingId(pres.id);
+    try {
+      const res = await prescriptionService.dispense(pres.id);
+      const summary = res.data.dispensedItems
+        .map((i) => `${i.medicationName} (${i.batches.map((b) => `${b.batchNumber}: -${b.consumedQuantity}`).join(", ")})`)
+        .join("; ");
+      showToast(
+        summary ? `Đã cấp thuốc & trừ kho FEFO: ${summary}` : "Đã xác nhận cấp thuốc thành công.",
+        "success"
+      );
+      setIsDetailOpen(false);
+      await loadData();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Không thể cấp thuốc.", "error");
+    } finally {
+      setDispensingId(null);
+    }
+  };
+
+  const todayIsoPrefix = new Date().toISOString().slice(0, 10);
   const filteredPrescriptions = prescriptions.filter((p) => {
     const matchesSearch =
       p.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.diagnosis.toLowerCase().includes(searchTerm.toLowerCase());
     if (dateFilter === "today") {
-      return matchesSearch && p.createdDate.includes("16/10/2026");
+      return matchesSearch && p.rawCreatedAt.startsWith(todayIsoPrefix);
     }
     return matchesSearch;
   });
@@ -363,10 +414,19 @@ function PrescriptionsContent() {
                       {pres.createdDate}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      {pres.status === "signed" ? (
-                        <span className="px-2.5 py-0.5 rounded text-[var(--text-xs)] font-semibold bg-[var(--status-success-bg)] text-[var(--status-success-fg)] inline-flex items-center gap-1">
+                      {pres.status === "Dispensed" ? (
+                        <span className="px-2.5 py-0.5 rounded text-[var(--text-xs)] font-semibold bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Đã ký số</span>
+                          <span>Đã cấp thuốc</span>
+                        </span>
+                      ) : pres.status === "Issued" ? (
+                        <span className="px-2.5 py-0.5 rounded text-[var(--text-xs)] font-semibold bg-sky-100 text-sky-800 inline-flex items-center gap-1">
+                          <FileCheck className="w-3.5 h-3.5" />
+                          <span>Đã phát hành</span>
+                        </span>
+                      ) : pres.status === "Cancelled" ? (
+                        <span className="px-2.5 py-0.5 rounded text-[var(--text-xs)] font-semibold bg-rose-100 text-rose-800">
+                          Đã hủy
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 rounded text-[var(--text-xs)] font-semibold bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]">
@@ -374,7 +434,17 @@ function PrescriptionsContent() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right space-x-2">
+                      {(pres.status === "Issued" || pres.status === "Draft") && (
+                        <button
+                          type="button"
+                          disabled={dispensingId === pres.id}
+                          onClick={() => handleDispensePrescription(pres)}
+                          className="px-3 py-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 text-[var(--text-xs)] font-semibold transition cursor-pointer disabled:opacity-50"
+                        >
+                          {dispensingId === pres.id ? "Đang cấp..." : "Cấp thuốc"}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
@@ -496,18 +566,29 @@ function PrescriptionsContent() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="sm:col-span-2">
                 <label className="block text-[var(--text-xs)] font-semibold text-slate-700 mb-1">
-                  Tên thuốc & Hàm lượng
+                  Tên thuốc & Hàm lượng (Kho thuốc / Mẫu chuẩn)
                 </label>
                 <select
-                  value={chosenDrug}
+                  value={chosenInventoryId ? `inv:${chosenInventoryId}` : chosenDrug}
                   onChange={(e) => handleSelectDrug(e.target.value)}
                   className="w-full px-3 py-2 text-[var(--text-sm)] border border-[var(--color-border)] rounded-[var(--radius)] bg-white text-[var(--color-text)] focus:outline-none"
                 >
-                  {COMMON_DRUGS.map((d) => (
-                    <option key={d.name} value={d.name}>
-                      {d.name} ({d.type})
-                    </option>
-                  ))}
+                  {inventoryDrugs.length > 0 && (
+                    <optgroup label="Thuốc / Vật tư trong Kho (Tự động trừ FEFO khi cấp)">
+                      {inventoryDrugs.map((item) => (
+                        <option key={item.id} value={`inv:${item.id}`}>
+                          [{item.code}] {item.name} — Tồn: {item.totalQuantityOnHand} {item.unit}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Danh mục thuốc tham khảo">
+                    {COMMON_DRUGS.map((d) => (
+                      <option key={d.name} value={d.name}>
+                        {d.name} ({d.type})
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
@@ -759,15 +840,28 @@ function PrescriptionsContent() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[var(--color-border)] flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[var(--radius)] bg-slate-800 text-white text-[var(--text-sm)] font-medium hover:bg-slate-900 transition cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                <span>In đơn thuốc</span>
-              </button>
+            <div className="pt-4 border-t border-[var(--color-border)] flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[var(--radius)] bg-slate-800 text-white text-[var(--text-sm)] font-medium hover:bg-slate-900 transition cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>In đơn thuốc</span>
+                </button>
+                {(selectedPrescription.status === "Issued" || selectedPrescription.status === "Draft") && (
+                  <button
+                    type="button"
+                    disabled={dispensingId === selectedPrescription.id}
+                    onClick={() => handleDispensePrescription(selectedPrescription)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[var(--radius)] bg-emerald-600 text-white text-[var(--text-sm)] font-medium hover:bg-emerald-700 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{dispensingId === selectedPrescription.id ? "Đang cấp..." : "Cấp thuốc & Trừ kho"}</span>
+                  </button>
+                )}
+              </div>
 
               <button
                 type="button"

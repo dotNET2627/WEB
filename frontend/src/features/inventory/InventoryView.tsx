@@ -17,13 +17,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { inventoryService } from "@/services/inventory-service";
 import type {
   BatchConsumptionResult,
+  InventoryAlerts,
   InventoryBatch,
   InventoryItem,
   InventoryTransaction,
   InventoryTransactionType
 } from "@/types/inventory";
 
-type ActiveTab = "items" | "batches" | "transactions";
+type ActiveTab = "items" | "batches" | "transactions" | "alerts";
 
 const TX_TYPE_LABELS: Record<InventoryTransactionType, { label: string; badgeClass: string }> = {
   Import: { label: "Nhập kho", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
@@ -55,6 +56,8 @@ function ClinicInventoryView() {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [batches, setBatches] = useState<InventoryBatch[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
+  const [alerts, setAlerts] = useState<InventoryAlerts | null>(null);
+  const [alertDays, setAlertDays] = useState<number>(30);
   const [search, setSearch] = useState("");
   const [txFilterType, setTxFilterType] = useState<string>("");
 
@@ -134,6 +137,15 @@ function ClinicInventoryView() {
     }
   }, [txFilterType]);
 
+  const loadAlerts = useCallback(async () => {
+    try {
+      const data = await inventoryService.getAlerts(alertDays);
+      setAlerts(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải báo cáo cảnh báo kho.");
+    }
+  }, [alertDays]);
+
   useEffect(() => {
     void loadItems();
   }, [loadItems]);
@@ -143,8 +155,10 @@ function ClinicInventoryView() {
       void loadBatches();
     } else if (activeTab === "transactions") {
       void loadTransactions();
+    } else if (activeTab === "alerts") {
+      void loadAlerts();
     }
-  }, [activeTab, loadBatches, loadTransactions]);
+  }, [activeTab, loadBatches, loadTransactions, loadAlerts]);
 
   const lowStockCount = useMemo(() => items.filter((i) => i.isLowStock).length, [items]);
   const totalUnits = useMemo(
@@ -357,6 +371,18 @@ function ClinicInventoryView() {
         >
           <History className="h-4 w-4" />
           Lịch sử Giao dịch
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("alerts")}
+          className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium ${
+            activeTab === "alerts"
+              ? "border-sky-600 text-sky-600"
+              : "border-transparent text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <AlertTriangle className="h-4 w-4" />
+          Cảnh báo & Giá trị kho
         </button>
       </div>
 
@@ -654,6 +680,129 @@ function ClinicInventoryView() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: ALERTS & VALUATION */}
+      {activeTab === "alerts" && (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Tổng giá trị tồn kho còn hạn</p>
+              <p className="text-2xl font-bold text-emerald-700">
+                {(alerts?.totalInventoryValuation ?? 0).toLocaleString("vi-VN")} đ
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-700">Cảnh báo cận hạn trong:</span>
+              {[30, 60, 90].map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setAlertDays(d)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                    alertDays === d
+                      ? "bg-sky-600 text-white"
+                      : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {d} ngày
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-base font-semibold text-slate-900">
+              Lô hàng đã hết hạn / sắp hết hạn ({alerts?.expiringBatches.length ?? 0})
+            </h3>
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3">Vật tư</th>
+                    <th className="px-4 py-3">Số lô</th>
+                    <th className="px-4 py-3">Hạn sử dụng</th>
+                    <th className="px-4 py-3 text-right">Còn lại</th>
+                    <th className="px-4 py-3">Tình trạng</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {!alerts || alerts.expiringBatches.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                        Không có lô hàng nào sắp hết hạn trong {alertDays} ngày tới.
+                      </td>
+                    </tr>
+                  ) : (
+                    alerts.expiringBatches.map((b) => (
+                      <tr key={b.batchId} className={b.isExpired ? "bg-rose-50/70" : "bg-amber-50/50"}>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          [{b.itemCode}] {b.itemName}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs">{b.batchNumber}</td>
+                        <td className="px-4 py-3">{b.expirationDate}</td>
+                        <td className="px-4 py-3 text-right font-semibold">
+                          {b.quantityOnHand} {b.unit}
+                        </td>
+                        <td className="px-4 py-3">
+                          {b.isExpired ? (
+                            <span className="inline-flex rounded-full border border-rose-300 bg-rose-100 px-2.5 py-0.5 text-xs font-medium text-rose-800">
+                              Đã quá hạn ({Math.abs(b.daysUntilExpiration)} ngày)
+                            </span>
+                          ) : (
+                            <span className="inline-flex rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                              Còn {b.daysUntilExpiration} ngày
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-base font-semibold text-slate-900">
+              Vật tư dưới ngưỡng tối thiểu ({alerts?.lowStockItems.length ?? 0})
+            </h3>
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3">Mã</th>
+                    <th className="px-4 py-3">Tên vật tư</th>
+                    <th className="px-4 py-3 text-right">Tồn hiện tại</th>
+                    <th className="px-4 py-3 text-right">Ngưỡng tối thiểu</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {!alerts || alerts.lowStockItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                        Tất cả vật tư đều đủ tồn kho an toàn.
+                      </td>
+                    </tr>
+                  ) : (
+                    alerts.lowStockItems.map((i) => (
+                      <tr key={i.itemId} className="bg-rose-50/40">
+                        <td className="px-4 py-3 font-mono text-xs">{i.code}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900">{i.name}</td>
+                        <td className="px-4 py-3 text-right font-bold text-rose-700">
+                          {i.totalQuantityOnHand} {i.unit}
+                        </td>
+                        <td className="px-4 py-3 text-right text-slate-600">
+                          {i.minimumStock} {i.unit}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

@@ -39,6 +39,7 @@ public sealed class MongoDatabaseContext
     public IMongoCollection<CashierShiftDocument> CashierShifts => Database.GetCollection<CashierShiftDocument>(CollectionNames.CashierShifts);
     public IMongoCollection<InventoryBatchDocument> InventoryBatches => Database.GetCollection<InventoryBatchDocument>(CollectionNames.InventoryBatches);
     public IMongoCollection<InventoryTransactionDocument> InventoryTransactions => Database.GetCollection<InventoryTransactionDocument>(CollectionNames.InventoryTransactions);
+    public IMongoCollection<PrescriptionDocument> Prescriptions => Database.GetCollection<PrescriptionDocument>(CollectionNames.Prescriptions);
     public IMongoCollection<UserDocument> Users => Database.GetCollection<UserDocument>(CollectionNames.Users);
     public IMongoCollection<RoleDocument> Roles => Database.GetCollection<RoleDocument>(CollectionNames.Roles);
     public IMongoCollection<RefreshTokenDocument> RefreshTokens => Database.GetCollection<RefreshTokenDocument>(CollectionNames.RefreshTokens);

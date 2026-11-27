@@ -90,3 +90,36 @@ export interface InventoryTransaction {
   note?: string | null;
   createdAt: string;
 }
+
+export interface LowStockItemAlert {
+  itemId: string;
+  code: string;
+  name: string;
+  unit: string;
+  totalQuantityOnHand: number;
+  minimumStock: number;
+}
+
+export interface ExpiringBatchAlert {
+  batchId: string;
+  inventoryItemId: string;
+  itemCode: string;
+  itemName: string;
+  unit: string;
+  batchNumber: string;
+  expirationDate: string;
+  quantityOnHand: number;
+  unitCost: number;
+  daysUntilExpiration: number;
+  isExpired: boolean;
+}
+
+export interface InventoryAlerts {
+  totalInventoryValuation: number;
+  totalActiveItems: number;
+  lowStockCount: number;
+  expiringSoonCount: number;
+  expiredCount: number;
+  lowStockItems: LowStockItemAlert[];
+  expiringBatches: ExpiringBatchAlert[];
+}

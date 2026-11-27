@@ -1,6 +1,7 @@
 using DentalManagement.Api.Extensions;
 using DentalManagement.Application.Abstractions.Services;
 using DentalManagement.Application.Common;
+using DentalManagement.Application.Inventory.Alerts.GetInventoryAlerts;
 using DentalManagement.Application.Inventory.Batches.ConsumeStockFefo;
 using DentalManagement.Application.Inventory.Batches.ListInventoryBatches;
 using DentalManagement.Application.Inventory.Batches.ReceiveInventoryBatch;
@@ -245,6 +246,21 @@ public static class InventoryEndpoints
                 : Results.Problem(statusCode: StatusCodes.Status400BadRequest, detail: result.Error!.Message);
         })
         .WithName("ListInventoryTransactions")
+        .RequireAuthorization(DefaultPermissions.Inventory.Read);
+
+        // 8. Báo cáo tổng giá trị kho & cảnh báo cận hạn / dưới ngưỡng tối thiểu
+        group.MapGet("/alerts", async (
+            int? days,
+            [FromServices] ICurrentUser user,
+            IQueryHandler<GetInventoryAlertsQuery, Result<InventoryAlertsDto>> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new GetInventoryAlertsQuery(user.ClinicId!.Value, days ?? 30), cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : Results.Problem(statusCode: StatusCodes.Status400BadRequest, detail: result.Error!.Message);
+        })
+        .WithName("GetInventoryAlerts")
         .RequireAuthorization(DefaultPermissions.Inventory.Read);
 
         return endpoints;

@@ -20,6 +20,7 @@ public static class EndpointRouteBuilderExtensions
         endpoints.MapPatientEndpoints();
         endpoints.MapMedicalImageEndpoints();
         endpoints.MapInventoryEndpoints();
+        endpoints.MapPrescriptionEndpoints();
         endpoints.MapServiceEndpoints();
         endpoints.MapPromotionEndpoints();
         endpoints.MapTreatmentPlanEndpoints();

@@ -4,6 +4,7 @@ import type {
   ConsumeStockFefoRequest,
   CreateInventoryItemRequest,
   InventoryBatch,
+  InventoryAlerts,
   InventoryItem,
   InventoryTransaction,
   InventoryTransactionType,
@@ -66,5 +67,9 @@ export const inventoryService = {
     return apiClient.get<InventoryTransaction[]>(
       `/api/v1/inventory/transactions${params.size ? `?${params}` : ""}`
     );
+  },
+
+  async getAlerts(days: number = 30): Promise<InventoryAlerts> {
+    return apiClient.get<InventoryAlerts>(`/api/v1/inventory/alerts?days=${days}`);
   }
 };
