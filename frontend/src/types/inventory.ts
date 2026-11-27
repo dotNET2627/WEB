@@ -123,3 +123,48 @@ export interface InventoryAlerts {
   lowStockItems: LowStockItemAlert[];
   expiringBatches: ExpiringBatchAlert[];
 }
+
+export interface Supplier {
+  id: string;
+  clinicId: string;
+  code: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  contactPerson?: string | null;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface CreateSupplierRequest {
+  code: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  contactPerson?: string;
+}
+
+export interface UpdateSupplierRequest {
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  contactPerson?: string;
+  isActive: boolean;
+}
+
+export interface AuditBatchStockRequest {
+  inventoryBatchId: string;
+  actualQuantity: number;
+  reason?: string;
+}
+
+export interface AuditBatchStockResult {
+  batchId: string;
+  batchNumber: string;
+  previousQuantity: number;
+  actualQuantity: number;
+  delta: number;
+}

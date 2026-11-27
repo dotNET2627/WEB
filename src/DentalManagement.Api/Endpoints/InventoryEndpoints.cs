@@ -2,12 +2,14 @@ using DentalManagement.Api.Extensions;
 using DentalManagement.Application.Abstractions.Services;
 using DentalManagement.Application.Common;
 using DentalManagement.Application.Inventory.Alerts.GetInventoryAlerts;
+using DentalManagement.Application.Inventory.Audits;
 using DentalManagement.Application.Inventory.Batches.ConsumeStockFefo;
 using DentalManagement.Application.Inventory.Batches.ListInventoryBatches;
 using DentalManagement.Application.Inventory.Batches.ReceiveInventoryBatch;
 using DentalManagement.Application.Inventory.Items.CreateInventoryItem;
 using DentalManagement.Application.Inventory.Items.ListInventoryItems;
 using DentalManagement.Application.Inventory.Items.UpdateInventoryItem;
+using DentalManagement.Application.Inventory.Suppliers;
 using DentalManagement.Application.Inventory.Transactions.ListInventoryTransactions;
 using DentalManagement.Application.Security;
 using DentalManagement.Domain.Common;
@@ -263,6 +265,124 @@ public static class InventoryEndpoints
         .WithName("GetInventoryAlerts")
         .RequireAuthorization(DefaultPermissions.Inventory.Read);
 
+        // 9. Danh sách Nhà cung cấp
+        group.MapGet("/suppliers", async (
+            [FromServices] ICurrentUser user,
+            IQueryHandler<ListSuppliersQuery, Result<IReadOnlyList<SupplierDto>>> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(new ListSuppliersQuery(user.ClinicId!.Value), cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : Results.Problem(statusCode: StatusCodes.Status400BadRequest, detail: result.Error!.Message);
+        })
+        .WithName("ListSuppliers")
+        .RequireAuthorization(DefaultPermissions.Inventory.Read);
+
+        // 10. Tạo Nhà cung cấp mới
+        group.MapPost("/suppliers", async (
+            CreateSupplierRequest request,
+            [FromServices] ICurrentUser user,
+            ICommandHandler<CreateSupplierCommand, Result<Guid>> handler,
+            IValidator<CreateSupplierCommand> validator,
+            CancellationToken cancellationToken) =>
+        {
+            var command = new CreateSupplierCommand(
+                user.ClinicId!.Value,
+                request.Code,
+                request.Name,
+                request.Phone,
+                request.Email,
+                request.Address,
+                request.ContactPerson);
+
+            var validationResult = await validator.ValidateAsync(command, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return Results.ValidationProblem(validationResult.ToDictionary());
+            }
+
+            var result = await handler.Handle(command, cancellationToken);
+            if (result.IsFailure)
+            {
+                return result.Error!.Code == "supplier.duplicate_code"
+                    ? Results.Problem(statusCode: StatusCodes.Status409Conflict, title: "Trùng mã NCC", detail: result.Error.Message)
+                    : Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: "Không thể tạo NCC", detail: result.Error.Message);
+            }
+
+            return Results.Created($"/api/v1/inventory/suppliers/{result.Value}", new { id = result.Value, message = "Thêm nhà cung cấp thành công." });
+        })
+        .WithName("CreateSupplier")
+        .RequireAuthorization(DefaultPermissions.Inventory.Import);
+
+        // 11. Cập nhật Nhà cung cấp
+        group.MapPut("/suppliers/{id:guid}", async (
+            Guid id,
+            UpdateSupplierRequest request,
+            [FromServices] ICurrentUser user,
+            ICommandHandler<UpdateSupplierCommand, Result> handler,
+            IValidator<UpdateSupplierCommand> validator,
+            CancellationToken cancellationToken) =>
+        {
+            var command = new UpdateSupplierCommand(
+                user.ClinicId!.Value,
+                id,
+                request.Name,
+                request.Phone,
+                request.Email,
+                request.Address,
+                request.ContactPerson,
+                request.IsActive);
+
+            var validationResult = await validator.ValidateAsync(command, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return Results.ValidationProblem(validationResult.ToDictionary());
+            }
+
+            var result = await handler.Handle(command, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(new { message = "Cập nhật nhà cung cấp thành công." })
+                : Results.Problem(statusCode: StatusCodes.Status400BadRequest, detail: result.Error!.Message);
+        })
+        .WithName("UpdateSupplier")
+        .RequireAuthorization(DefaultPermissions.Inventory.Adjust);
+
+        // 12. Kiểm kê kho & cân bằng tồn kho thực tế (Audit Stock)
+        group.MapPost("/audits", async (
+            AuditBatchStockRequest request,
+            [FromServices] ICurrentUser user,
+            ICommandHandler<AuditBatchStockCommand, Result<AuditBatchStockResultDto>> handler,
+            IValidator<AuditBatchStockCommand> validator,
+            CancellationToken cancellationToken) =>
+        {
+            var command = new AuditBatchStockCommand(
+                user.ClinicId!.Value,
+                request.InventoryBatchId,
+                request.ActualQuantity,
+                request.Reason);
+
+            var validationResult = await validator.ValidateAsync(command, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return Results.ValidationProblem(validationResult.ToDictionary());
+            }
+
+            var result = await handler.Handle(command, cancellationToken);
+            if (result.IsFailure)
+            {
+                return Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: "Không thể kiểm kê", detail: result.Error!.Message);
+            }
+
+            return Results.Ok(new
+            {
+                message = "Cân bằng tồn kho kiểm kê thành công.",
+                data = result.Value
+            });
+        })
+        .WithName("AuditBatchStock")
+        .RequireAuthorization(DefaultPermissions.Inventory.Adjust);
+
         return endpoints;
     }
 }
@@ -298,3 +418,24 @@ public sealed record ConsumeStockFefoRequest(
     string? TransactionType = null,
     string? ReferenceCode = null,
     string? Note = null);
+
+public sealed record CreateSupplierRequest(
+    string Code,
+    string Name,
+    string? Phone,
+    string? Email,
+    string? Address,
+    string? ContactPerson);
+
+public sealed record UpdateSupplierRequest(
+    string Name,
+    string? Phone,
+    string? Email,
+    string? Address,
+    string? ContactPerson,
+    bool IsActive);
+
+public sealed record AuditBatchStockRequest(
+    Guid InventoryBatchId,
+    int ActualQuantity,
+    string? Reason);

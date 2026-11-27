@@ -15,6 +15,7 @@ public static class CollectionNames
     public const string InventoryItems = "inventoryItems";
     public const string InventoryBatches = "inventoryBatches";
     public const string InventoryTransactions = "inventoryTransactions";
+    public const string Suppliers = "suppliers";
     public const string Prescriptions = "prescriptions";
     public const string Invoices = "invoices";
     public const string DiscountPrograms = "discountPrograms";

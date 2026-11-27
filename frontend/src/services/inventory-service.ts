@@ -1,15 +1,20 @@
 import { apiClient } from "@/lib/api-client";
 import type {
+  AuditBatchStockRequest,
+  AuditBatchStockResult,
   BatchConsumptionResult,
   ConsumeStockFefoRequest,
   CreateInventoryItemRequest,
-  InventoryBatch,
+  CreateSupplierRequest,
   InventoryAlerts,
+  InventoryBatch,
   InventoryItem,
   InventoryTransaction,
   InventoryTransactionType,
   ReceiveInventoryBatchRequest,
-  UpdateInventoryItemRequest
+  Supplier,
+  UpdateInventoryItemRequest,
+  UpdateSupplierRequest
 } from "@/types/inventory";
 
 export const inventoryService = {
@@ -71,5 +76,30 @@ export const inventoryService = {
 
   async getAlerts(days: number = 30): Promise<InventoryAlerts> {
     return apiClient.get<InventoryAlerts>(`/api/v1/inventory/alerts?days=${days}`);
+  },
+
+  async listSuppliers(): Promise<Supplier[]> {
+    return apiClient.get<Supplier[]>("/api/v1/inventory/suppliers");
+  },
+
+  async createSupplier(payload: CreateSupplierRequest): Promise<{ id: string; message: string }> {
+    return apiClient.post<{ id: string; message: string }, CreateSupplierRequest>(
+      "/api/v1/inventory/suppliers",
+      payload
+    );
+  },
+
+  async updateSupplier(id: string, payload: UpdateSupplierRequest): Promise<{ message: string }> {
+    return apiClient.put<{ message: string }, UpdateSupplierRequest>(
+      `/api/v1/inventory/suppliers/${id}`,
+      payload
+    );
+  },
+
+  async auditBatch(payload: AuditBatchStockRequest): Promise<{ message: string; data: AuditBatchStockResult }> {
+    return apiClient.post<{ message: string; data: AuditBatchStockResult }, AuditBatchStockRequest>(
+      "/api/v1/inventory/audits",
+      payload
+    );
   }
 };

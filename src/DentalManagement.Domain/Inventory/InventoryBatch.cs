@@ -84,4 +84,16 @@ public sealed class InventoryBatch : Entity
         QuantityOnHand -= quantity;
         return Result.Success();
     }
+
+    public Result<int> AdjustQuantity(int actualQuantity)
+    {
+        if (actualQuantity < 0)
+        {
+            return Result<int>.Failure("inventory.invalid_quantity", "Số lượng kiểm kê thực tế phải >= 0.");
+        }
+
+        var delta = actualQuantity - QuantityOnHand;
+        QuantityOnHand = actualQuantity;
+        return Result<int>.Success(delta);
+    }
 }

@@ -6,6 +6,9 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   Boxes,
+  Building2,
+  ClipboardCheck,
+  Download,
   History,
   Package,
   Pencil,
@@ -21,10 +24,11 @@ import type {
   InventoryBatch,
   InventoryItem,
   InventoryTransaction,
-  InventoryTransactionType
+  InventoryTransactionType,
+  Supplier
 } from "@/types/inventory";
 
-type ActiveTab = "items" | "batches" | "transactions" | "alerts";
+type ActiveTab = "items" | "batches" | "transactions" | "alerts" | "suppliers";
 
 const TX_TYPE_LABELS: Record<InventoryTransactionType, { label: string; badgeClass: string }> = {
   Import: { label: "Nhập kho", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
@@ -58,6 +62,7 @@ function ClinicInventoryView() {
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
   const [alerts, setAlerts] = useState<InventoryAlerts | null>(null);
   const [alertDays, setAlertDays] = useState<number>(30);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [search, setSearch] = useState("");
   const [txFilterType, setTxFilterType] = useState<string>("");
 
@@ -71,6 +76,17 @@ function ClinicInventoryView() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [batchModalOpen, setBatchModalOpen] = useState(false);
   const [consumeModalOpen, setConsumeModalOpen] = useState(false);
+  const [auditBatchTarget, setAuditBatchTarget] = useState<InventoryBatch | null>(null);
+  const [auditActualQty, setAuditActualQty] = useState(0);
+  const [auditReason, setAuditReason] = useState("");
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [supCode, setSupCode] = useState("");
+  const [supName, setSupName] = useState("");
+  const [supPhone, setSupPhone] = useState("");
+  const [supEmail, setSupEmail] = useState("");
+  const [supContact, setSupContact] = useState("");
+  const [supAddress, setSupAddress] = useState("");
 
   // Item form state
   const [itemCode, setItemCode] = useState("");
@@ -146,6 +162,15 @@ function ClinicInventoryView() {
     }
   }, [alertDays]);
 
+  const loadSuppliers = useCallback(async () => {
+    try {
+      const data = await inventoryService.listSuppliers();
+      setSuppliers(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách nhà cung cấp.");
+    }
+  }, []);
+
   useEffect(() => {
     void loadItems();
   }, [loadItems]);
@@ -157,8 +182,10 @@ function ClinicInventoryView() {
       void loadTransactions();
     } else if (activeTab === "alerts") {
       void loadAlerts();
+    } else if (activeTab === "suppliers") {
+      void loadSuppliers();
     }
-  }, [activeTab, loadBatches, loadTransactions, loadAlerts]);
+  }, [activeTab, loadBatches, loadTransactions, loadAlerts, loadSuppliers]);
 
   const lowStockCount = useMemo(() => items.filter((i) => i.isLowStock).length, [items]);
   const totalUnits = useMemo(
@@ -273,6 +300,104 @@ function ClinicInventoryView() {
     }
   }
 
+  async function handleAuditBatch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!auditBatchTarget) return;
+    setError(null);
+    setFeedback(null);
+    try {
+      const res = await inventoryService.auditBatch({
+        inventoryBatchId: auditBatchTarget.id,
+        actualQuantity: Number(auditActualQty),
+        reason: auditReason || undefined
+      });
+      setAuditBatchTarget(null);
+      setAuditReason("");
+      setFeedback(
+        `Đã kiểm kê lô ${res.data.batchNumber}: tồn cũ ${res.data.previousQuantity} -> thực tế ${res.data.actualQuantity}.`
+      );
+      await Promise.all([loadItems(), loadBatches()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể kiểm kê lô hàng.");
+    }
+  }
+
+  function openCreateSupplierModal() {
+    setEditingSupplier(null);
+    setSupCode("");
+    setSupName("");
+    setSupPhone("");
+    setSupEmail("");
+    setSupContact("");
+    setSupAddress("");
+    setSupplierModalOpen(true);
+  }
+
+  function openEditSupplierModal(s: Supplier) {
+    setEditingSupplier(s);
+    setSupCode(s.code);
+    setSupName(s.name);
+    setSupPhone(s.phone ?? "");
+    setSupEmail(s.email ?? "");
+    setSupContact(s.contactPerson ?? "");
+    setSupAddress(s.address ?? "");
+    setSupplierModalOpen(true);
+  }
+
+  async function handleSaveSupplier(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setFeedback(null);
+    try {
+      if (editingSupplier) {
+        await inventoryService.updateSupplier(editingSupplier.id, {
+          name: supName,
+          phone: supPhone || undefined,
+          email: supEmail || undefined,
+          contactPerson: supContact || undefined,
+          address: supAddress || undefined,
+          isActive: true
+        });
+        setFeedback("Đã cập nhật nhà cung cấp.");
+      } else {
+        await inventoryService.createSupplier({
+          code: supCode,
+          name: supName,
+          phone: supPhone || undefined,
+          email: supEmail || undefined,
+          contactPerson: supContact || undefined,
+          address: supAddress || undefined
+        });
+        setFeedback("Đã thêm nhà cung cấp mới.");
+      }
+      setSupplierModalOpen(false);
+      await loadSuppliers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể lưu nhà cung cấp.");
+    }
+  }
+
+  function exportTransactionsCsv() {
+    const header = ["Thời gian", "Loại giao dịch", "Số lô", "Số lượng", "Đơn giá", "Mã chứng từ", "Ghi chú"];
+    const rows = transactions.map((tx) => [
+      new Date(tx.createdAt).toLocaleString("vi-VN"),
+      TX_TYPE_LABELS[tx.type]?.label ?? tx.type,
+      tx.batchNumber,
+      String(tx.quantity),
+      String(tx.unitCost),
+      tx.referenceCode ?? "",
+      (tx.note ?? "").replace(/"/g, '""')
+    ]);
+    const csv = [header, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `lich-su-kho-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -383,6 +508,18 @@ function ClinicInventoryView() {
         >
           <AlertTriangle className="h-4 w-4" />
           Cảnh báo & Giá trị kho
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("suppliers")}
+          className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium ${
+            activeTab === "suppliers"
+              ? "border-sky-600 text-sky-600"
+              : "border-transparent text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Building2 className="h-4 w-4" />
+          Nhà cung cấp
         </button>
       </div>
 
@@ -553,12 +690,13 @@ function ClinicInventoryView() {
                   <th className="px-4 py-3 text-right">Số lượng còn</th>
                   <th className="px-4 py-3 text-right">Giá nhập</th>
                   <th className="px-4 py-3">Cảnh báo HSD</th>
+                  <th className="px-4 py-3 text-right">Kiểm kê</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {batches.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                       Chưa có lô hàng nào cho vật tư này.
                     </td>
                   </tr>
@@ -599,6 +737,20 @@ function ClinicInventoryView() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuditBatchTarget(b);
+                            setAuditActualQty(b.quantityOnHand);
+                            setAuditReason("");
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                          <ClipboardCheck className="h-3.5 w-3.5" />
+                          Kiểm kê
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -611,22 +763,34 @@ function ClinicInventoryView() {
       {/* TAB 3: TRANSACTIONS */}
       {activeTab === "transactions" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <label htmlFor="tx-type-filter" className="text-sm font-medium text-slate-700">
-              Loại giao dịch:
-            </label>
-            <select
-              id="tx-type-filter"
-              value={txFilterType}
-              onChange={(e) => setTxFilterType(e.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <label htmlFor="tx-type-filter" className="text-sm font-medium text-slate-700">
+                Loại giao dịch:
+              </label>
+              <select
+                id="tx-type-filter"
+                value={txFilterType}
+                onChange={(e) => setTxFilterType(e.target.value)}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+              >
+                <option value="">Tất cả</option>
+                <option value="Import">Nhập kho</option>
+                <option value="ProcedureExport">Xuất thủ thuật</option>
+                <option value="Disposal">Xuất hủy hỏng</option>
+                <option value="PrescriptionDispense">Cấp thuốc</option>
+                <option value="Adjustment">Kiểm kê điều chỉnh</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={exportTransactionsCsv}
+              disabled={transactions.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
-              <option value="">Tất cả</option>
-              <option value="Import">Nhập kho</option>
-              <option value="ProcedureExport">Xuất thủ thuật</option>
-              <option value="Disposal">Xuất hủy hỏng</option>
-              <option value="PrescriptionDispense">Cấp thuốc</option>
-            </select>
+              <Download className="h-4 w-4" />
+              Xuất Excel (CSV)
+            </button>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -777,32 +941,290 @@ function ClinicInventoryView() {
                     <th className="px-4 py-3">Tên vật tư</th>
                     <th className="px-4 py-3 text-right">Tồn hiện tại</th>
                     <th className="px-4 py-3 text-right">Ngưỡng tối thiểu</th>
+                    <th className="px-4 py-3 text-right">Gợi ý nhập bổ sung</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {!alerts || alerts.lowStockItems.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                      <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
                         Tất cả vật tư đều đủ tồn kho an toàn.
                       </td>
                     </tr>
                   ) : (
-                    alerts.lowStockItems.map((i) => (
-                      <tr key={i.itemId} className="bg-rose-50/40">
-                        <td className="px-4 py-3 font-mono text-xs">{i.code}</td>
-                        <td className="px-4 py-3 font-medium text-slate-900">{i.name}</td>
-                        <td className="px-4 py-3 text-right font-bold text-rose-700">
-                          {i.totalQuantityOnHand} {i.unit}
-                        </td>
-                        <td className="px-4 py-3 text-right text-slate-600">
-                          {i.minimumStock} {i.unit}
-                        </td>
-                      </tr>
-                    ))
+                    alerts.lowStockItems.map((i) => {
+                      const suggestedOrder = Math.max(0, i.minimumStock * 2 - i.totalQuantityOnHand);
+                      return (
+                        <tr key={i.itemId} className="bg-rose-50/40">
+                          <td className="px-4 py-3 font-mono text-xs">{i.code}</td>
+                          <td className="px-4 py-3 font-medium text-slate-900">{i.name}</td>
+                          <td className="px-4 py-3 text-right font-bold text-rose-700">
+                            {i.totalQuantityOnHand} {i.unit}
+                          </td>
+                          <td className="px-4 py-3 text-right text-slate-600">
+                            {i.minimumStock} {i.unit}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold text-sky-700">
+                            +{suggestedOrder} {i.unit}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: SUPPLIERS */}
+      {activeTab === "suppliers" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-900">
+              Danh sách Nhà cung cấp ({suppliers.length})
+            </h3>
+            <button
+              type="button"
+              onClick={openCreateSupplierModal}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-sky-700"
+            >
+              <Plus className="h-4 w-4" />
+              Thêm nhà cung cấp
+            </button>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-600">
+                <tr>
+                  <th className="px-4 py-3">Mã NCC</th>
+                  <th className="px-4 py-3">Tên nhà cung cấp</th>
+                  <th className="px-4 py-3">Người liên hệ</th>
+                  <th className="px-4 py-3">Số điện thoại</th>
+                  <th className="px-4 py-3">Địa chỉ</th>
+                  <th className="px-4 py-3 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {suppliers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                      Chưa có nhà cung cấp nào.
+                    </td>
+                  </tr>
+                ) : (
+                  suppliers.map((s) => (
+                    <tr key={s.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-mono text-xs font-semibold">{s.code}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">{s.name}</td>
+                      <td className="px-4 py-3 text-slate-600">{s.contactPerson || "—"}</td>
+                      <td className="px-4 py-3 text-slate-600">{s.phone || "—"}</td>
+                      <td className="px-4 py-3 text-slate-600">{s.address || "—"}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => openEditSupplierModal(s)}
+                          className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                          title="Sửa nhà cung cấp"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: AUDIT STOCK */}
+      {auditBatchTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="audit-modal-title"
+        >
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h2 id="audit-modal-title" className="text-lg font-semibold text-slate-900">
+                Kiểm kê lô: {auditBatchTarget.batchNumber}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setAuditBatchTarget(null)}
+                className="rounded p-1 text-slate-400 hover:bg-slate-100"
+                aria-label="Đóng"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAuditBatch} className="mt-4 space-y-4">
+              <p className="text-sm text-slate-600">
+                Tồn hệ thống hiện tại: <strong>{auditBatchTarget.quantityOnHand}</strong>
+              </p>
+              <div>
+                <label htmlFor="audit-actual" className="block text-sm font-medium text-slate-700">
+                  Số lượng thực tế kiểm đếm *
+                </label>
+                <input
+                  id="audit-actual"
+                  type="number"
+                  min={0}
+                  required
+                  value={auditActualQty}
+                  onChange={(e) => setAuditActualQty(Number(e.target.value))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="audit-reason" className="block text-sm font-medium text-slate-700">
+                  Lý do chênh lệch
+                </label>
+                <input
+                  id="audit-reason"
+                  value={auditReason}
+                  onChange={(e) => setAuditReason(e.target.value)}
+                  placeholder="Kiểm kê cuối tháng..."
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAuditBatchTarget(null)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+                >
+                  Cân bằng kho
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SUPPLIER */}
+      {supplierModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sup-modal-title"
+        >
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h2 id="sup-modal-title" className="text-lg font-semibold text-slate-900">
+                {editingSupplier ? "Cập nhật nhà cung cấp" : "Thêm nhà cung cấp mới"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setSupplierModalOpen(false)}
+                className="rounded p-1 text-slate-400 hover:bg-slate-100"
+                aria-label="Đóng"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveSupplier} className="mt-4 space-y-4">
+              {!editingSupplier && (
+                <div>
+                  <label htmlFor="sup-code" className="block text-sm font-medium text-slate-700">
+                    Mã NCC *
+                  </label>
+                  <input
+                    id="sup-code"
+                    required
+                    value={supCode}
+                    onChange={(e) => setSupCode(e.target.value)}
+                    placeholder="VD: NCC-3M"
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              )}
+              <div>
+                <label htmlFor="sup-name" className="block text-sm font-medium text-slate-700">
+                  Tên nhà cung cấp *
+                </label>
+                <input
+                  id="sup-name"
+                  required
+                  value={supName}
+                  onChange={(e) => setSupName(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="sup-contact" className="block text-sm font-medium text-slate-700">
+                    Người liên hệ
+                  </label>
+                  <input
+                    id="sup-contact"
+                    value={supContact}
+                    onChange={(e) => setSupContact(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="sup-phone" className="block text-sm font-medium text-slate-700">
+                    Số điện thoại
+                  </label>
+                  <input
+                    id="sup-phone"
+                    value={supPhone}
+                    onChange={(e) => setSupPhone(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="sup-email" className="block text-sm font-medium text-slate-700">
+                  Email
+                </label>
+                <input
+                  id="sup-email"
+                  type="email"
+                  value={supEmail}
+                  onChange={(e) => setSupEmail(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="sup-address" className="block text-sm font-medium text-slate-700">
+                  Địa chỉ
+                </label>
+                <input
+                  id="sup-address"
+                  value={supAddress}
+                  onChange={(e) => setSupAddress(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSupplierModalOpen(false)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+                >
+                  Lưu nhà cung cấp
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
