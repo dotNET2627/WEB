@@ -8,12 +8,12 @@ on:
 
 env:
   DOTNET_VERSION: "10.0.x"
-  DOTNET_NOLOGO: true
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
 
 jobs:
   build-and-test:
-    name: Build & Test (.NET ${{ env.DOTNET_VERSION }})
+    name: Build & Test (.NET)
     runs-on: ubuntu-latest
 
     steps:
